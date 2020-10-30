@@ -1,15 +1,15 @@
-package testing;
 
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.testing;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import auto.Auto;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.Auto;
 
 
 @Autonomous(name = "test")
-
 public class test extends Auto {
-    /**
+
+    /***
      * this runs the auto class
      */
 
@@ -25,7 +25,7 @@ public class test extends Auto {
         runtime.reset();
         restRuntime();
         try {
-           shoot(1);
+            move(1,1,0);
         } catch (InterruptedException e) {
 
         }

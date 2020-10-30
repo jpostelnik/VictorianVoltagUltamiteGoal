@@ -1,4 +1,4 @@
-package auto.math.spline;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline;
 
 public class Combinatorics {
     public static int nCr(int n, int r)

@@ -1,4 +1,4 @@
-package auto.math;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math;
 
 
 public class basicMathCalls {

@@ -1,4 +1,4 @@
-package auto.helper;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline;
 
 public class Waypoint {
     private double xCord, yCord;

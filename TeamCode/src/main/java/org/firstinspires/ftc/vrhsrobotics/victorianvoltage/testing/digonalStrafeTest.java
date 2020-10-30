@@ -1,9 +1,9 @@
-package testing;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.testing;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import auto.Auto;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.*;
 
 @Autonomous(name = "diagonal strafe test")
 public class digonalStrafeTest extends Auto {

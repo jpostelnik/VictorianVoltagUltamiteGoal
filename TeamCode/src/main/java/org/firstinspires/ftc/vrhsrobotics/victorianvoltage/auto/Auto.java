@@ -1,4 +1,4 @@
-package auto;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
@@ -14,9 +14,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 
-import auto.math.basicMathCalls;
-import auto.math.controltheory.KalminFilter;
-import auto.math.controltheory.PIDController;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.basicMathCalls;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.KalminFilter;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.PIDController;
 
 
 /**
@@ -34,8 +34,8 @@ public abstract class Auto extends LinearOpMode {
     private final double DEAD_WHEEL_TICKS_PER_REV = 4096;
     private final double DEAD_WHEEL_TO_TICKS = DEAD_WHEEL_TICKS_PER_REV / (Math.PI * DEAD_WHEEL_DIAMTER);
 
-    private DcMotorEx rightFront, leftFront, rightRear, leftRear, intakeLeft, intakeRight, liftMotor, capMotor;
-    private Servo hookL, clawL, gripL, towerBL, hookR, clawR, gripR, towerBR,towerTR,towerTL,guideL,guideR;
+    private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, capMotor;
+    private Servo hookL, clawL, gripL, towerBL, hookR, clawR, gripR, towerBR, towerTR, towerTL, guideL, guideR;
     private DigitalChannel liftTouch;
 
     private BNO055IMU imu;
@@ -63,17 +63,18 @@ public abstract class Auto extends LinearOpMode {
     /**
      * inits motors
      */
-    private void initMotors() {
+    public void initMotors() {
         leftFront = (DcMotorEx) hardwareMap.dcMotor.get("leftFront");
         rightFront = (DcMotorEx) hardwareMap.dcMotor.get("rightFront");
         rightRear = (DcMotorEx) hardwareMap.dcMotor.get("rightRear");
         leftRear = (DcMotorEx) hardwareMap.dcMotor.get("leftRear");
 
-        intakeLeft = (DcMotorEx) hardwareMap.dcMotor.get("intakeLeft");
-        intakeRight = (DcMotorEx) hardwareMap.dcMotor.get("intakeRight");
 
-        capMotor = (DcMotorEx) hardwareMap.dcMotor.get("capMotor");
-        liftMotor = (DcMotorEx) hardwareMap.dcMotor.get("liftMotor");
+//        shootR = (DcMotorEx) hardwareMap.dcMotor.get("shootR");
+//        shootL = (DcMotorEx) hardwareMap.dcMotor.get("shootL");
+//        intake = (DcMotorEx) hardwareMap.dcMotor.get("intake");
+//
+//        liftMotor = (DcMotorEx) hardwareMap.dcMotor.get("liftMotor");
 
         driveTrain = new DcMotorEx[]{rightFront, leftFront, rightRear, leftRear};
 
@@ -90,53 +91,53 @@ public abstract class Auto extends LinearOpMode {
     /**
      * inits servos
      */
-    private void initServos() {
-        hookL = hardwareMap.servo.get("hookL");
-        hookR = hardwareMap.servo.get("hookR");
-        clawL = hardwareMap.servo.get("clawL");
-        clawR = hardwareMap.servo.get("clawR");
-        gripL = hardwareMap.servo.get("gripL");
-        gripR = hardwareMap.servo.get("gripR");
-        towerBL = hardwareMap.servo.get("towerBL");
-        towerBR = hardwareMap.servo.get("towerBR");
-        towerTL = hardwareMap.servo.get("towerTL");
-        towerTR = hardwareMap.servo.get("towerTR");
-        guideL = hardwareMap.servo.get("guideL");
-        guideR = hardwareMap.servo.get("guideR");
-
-
-        hookL.setPosition(1);
-        hookR.setPosition(0);
-
-        gripL.setPosition(0);
-        gripR.setPosition(1);
-
-        towerBL.setPosition(1);
-        towerBR.setPosition(0);
-
-        towerTR.setPosition(1);
-        towerTL.setPosition(0);
-
-        clawL.setPosition(0);
-        clawR.setPosition(1);
-
-        guideL.setPosition(0);
-        guideL.setPosition(1);
-
-
-
-    }
+//    private void initServos() {
+//        hookL = hardwareMap.servo.get("hookL");
+//        hookR = hardwareMap.servo.get("hookR");
+//        clawL = hardwareMap.servo.get("clawL");
+//        clawR = hardwareMap.servo.get("clawR");
+//        gripL = hardwareMap.servo.get("gripL");
+//        gripR = hardwareMap.servo.get("gripR");
+//        towerBL = hardwareMap.servo.get("towerBL");
+//        towerBR = hardwareMap.servo.get("towerBR");
+//        towerTL = hardwareMap.servo.get("towerTL");
+//        towerTR = hardwareMap.servo.get("towerTR");
+//        guideL = hardwareMap.servo.get("guideL");
+//        guideR = hardwareMap.servo.get("guideR");
+//
+//
+//        hookL.setPosition(1);
+//        hookR.setPosition(0);
+//
+//        gripL.setPosition(0);
+//        gripR.setPosition(1);
+//
+//        towerBL.setPosition(1);
+//        towerBR.setPosition(0);
+//
+//        towerTR.setPosition(1);
+//        towerTL.setPosition(0);
+//
+//        clawL.setPosition(0);
+//        clawR.setPosition(1);
+//
+//        guideL.setPosition(0);
+//        guideL.setPosition(1);
+//
+//
+//
+//    }
 
     /**
      * use for init the gyro
      */
     private void initGyro() {
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
         parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
-        parameters.loggingEnabled = true;
-        parameters.loggingTag = "IMU";
+        parameters.loggingEnabled      = true;
+        parameters.loggingTag          = "IMU";
         parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         imu.initialize(parameters);
@@ -147,7 +148,7 @@ public abstract class Auto extends LinearOpMode {
      */
     protected void initialize() {
         initMotors();
-        initServos();
+//        initServos();
         initGyro();
     }
 
@@ -180,16 +181,24 @@ public abstract class Auto extends LinearOpMode {
     public void move(double distance, double power, int heading) throws InterruptedException {
         resetMotors();
         double currentPosition = leftRear.getCurrentPosition();
-        int ticks = basicMathCalls.getTicksMotor(distance, "linear");
+//        int ticks = basicMathCalls.getTicksMotor(distance, "linear");
+        int ticks = (int) (distance * LINEAR_TO_TICKS);
+        telemetry.clear();
+        telemetry.addData("ticks",ticks);
         telemetry.addData("starting position", currentPosition);
         telemetry.update();
         for (DcMotorEx motor : driveTrain) {
             motor.setPower(power);
         }
+        telemetry.addLine("motors set");
+        telemetry.update();
         while (motorsBusy(ticks, currentPosition)) ;
         {
+            telemetry.clear();
+            telemetry.addData("ticks left", ticks-(leftRear.getCurrentPosition()));
             correction(heading, "strait", power, 1);
             heartbeat();
+            telemetry.update();
 
         }
         telemetry.addData("ending position", leftRear.getCurrentPosition());
@@ -199,7 +208,6 @@ public abstract class Auto extends LinearOpMode {
     }
 
     /**
-     *
      * @param time
      * @param power
      * @param runtime
@@ -214,8 +222,7 @@ public abstract class Auto extends LinearOpMode {
         for (DcMotorEx motor : driveTrain) {
             motor.setPower(power);
         }
-        while (runtime.seconds()<endTime)
-        {
+        while (runtime.seconds() < endTime) {
             heartbeat();
         }
         halt();
@@ -371,8 +378,8 @@ public abstract class Auto extends LinearOpMode {
         double ticksX = xDistance * DEAD_WHEEL_TO_TICKS;
         double ticksY = yDistance * DEAD_WHEEL_TO_TICKS;
 
-        double startingX = liftMotor.getCurrentPosition();
-        double startingY = capMotor.getCurrentPosition();
+        double startingX = 0;
+        double startingY = 0;
 
         if (degrees > 90 || degrees < -90) {
             power *= -1;
@@ -415,7 +422,7 @@ public abstract class Auto extends LinearOpMode {
      * @return returns true if the it has not reached the positions, false if it has. checks if to continue.
      */
     protected boolean deadWheelsBusy(double ticksY, double ticksX, double startingY, double startingX) {
-        return (Math.abs((liftMotor.getCurrentPosition() - startingX)) < Math.abs(ticksY) && Math.abs(capMotor.getCurrentPosition() - startingY) < Math.abs(ticksX));
+        return (Math.abs((shootL.getCurrentPosition() - startingX)) < Math.abs(ticksY) && Math.abs(capMotor.getCurrentPosition() - startingY) < Math.abs(ticksX));
     }
 
     /**
@@ -447,11 +454,13 @@ public abstract class Auto extends LinearOpMode {
     /**
      *
      */
-    private void resetDeadWheels() {
-        liftMotor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        liftMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        capMotor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        capMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+    public void resetDeadWheels() {
+        shootL.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        shootL.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        shootR.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        shootR.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        intake.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        intake.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
     }
 
     /**
@@ -505,12 +514,22 @@ public abstract class Auto extends LinearOpMode {
 
     }
 
-    public void shoot(double power)throws InterruptedException{
-        while(true)
-        {
-            intakeLeft.setPower(power);
+    public void shoot(double power, double time) throws InterruptedException {
+        time += runtime.time();
+        while (time > runtime.time()) {
+            shootR.setPower(power);
+            shootL.setPower(power);
             heartbeat();
         }
+
+    }
+
+    public void printDeadWheel(){
+        telemetry.clear();
+        telemetry.addData("forward right",shootR.getCurrentPosition()/DEAD_WHEEL_TO_TICKS);
+//        telemetry.addData("forward Left",shootL.getCurrentPosition());
+        telemetry.addData("horizontal",intake.getCurrentPosition()/DEAD_WHEEL_TO_TICKS);
+        telemetry.update();
 
     }
 }
