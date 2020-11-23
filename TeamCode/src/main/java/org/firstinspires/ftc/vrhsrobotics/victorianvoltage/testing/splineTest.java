@@ -16,14 +16,14 @@ public class splineTest extends Auto {
         telemetry.addLine("starting to initialize");
         telemetry.update();
         initialize();
-        double[] xCords = {5, 15, 20};
-        double[] yCords = {5, 13, 21};
+        double[] xCords = {0,5, 15, 20};
+        double[] yCords = {0,10, 9, 3};
         waitForStart();
         runtime.reset();
         restRuntime();
 
         try{
-            spline(xCords, yCords, 0.5, 0, runtime);
+            spline(xCords, yCords, 0, 1);
         } catch (InterruptedException e) {
         }
 

@@ -1,10 +1,11 @@
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.testing;
 
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.Auto;
 
-@TeleOp(name = "dead wheels test")
+@Autonomous(name = "dead wheels test")
 public class deadWheelTest extends Auto {
     @Override
     public void runOpMode() throws InterruptedException {
@@ -13,7 +14,14 @@ public class deadWheelTest extends Auto {
         resetDeadWheels();
         while (opModeIsActive())
         {
-            printDeadWheel();
+            try {
+                printDeadWheel();
+
+            }
+            catch (Exception e)
+            {
+
+            }
         }
 
     }

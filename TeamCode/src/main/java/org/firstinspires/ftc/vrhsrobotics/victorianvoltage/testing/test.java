@@ -1,5 +1,6 @@
 
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.testing;
+
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -13,7 +14,7 @@ public class test extends Auto {
      * this runs the auto class
      */
 
-    private ElapsedTime runtime =new ElapsedTime();
+    private ElapsedTime runtime = new ElapsedTime();
 
     @Override
     public void runOpMode() {
@@ -25,8 +26,7 @@ public class test extends Auto {
         runtime.reset();
         restRuntime();
         try {
-            move(1,1,0);
-        } catch (InterruptedException e) {
+strafe(10,1,false,0);        } catch (InterruptedException e) {
 
         }
 
