@@ -7,6 +7,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class PIDController {
     private ElapsedTime runtime;
     private double kp, ki,kd;
+    double[] errorList;
+    int index;
+
 private double totalError​, l​astError​, l​astTime;
 
     public PIDController(ElapsedTime runtime, double kp, double ki, double kd) {
@@ -15,6 +18,8 @@ private double totalError​, l​astError​, l​astTime;
         this.ki = ki;
         this.kd = kd;
         l​astTime = 0;
+        index = 0;
+        errorList = new double[10];
     }
 
     public void reset(ElapsedTime runtime)
@@ -27,7 +32,13 @@ private double totalError​, l​astError​, l​astTime;
         return kp*error;
     }
 
-    public double getKi() {
+    public double getKi(double error) {
+        errorList[index] = error;
+        totalError​ = 0;
+        for (int i = 0; i < errorList.length; i++) {
+            totalError​+=errorList[i];
+        }
+        index = (index+1)%errorList.length;
         return ki*totalError​ ;
     }
 
@@ -39,7 +50,7 @@ private double totalError​, l​astError​, l​astTime;
     {
         totalError​+=error;
 
-        double output= getKp(error)+getKi()+getKd(error);
+        double output= getKp(error)+getKi(error)+getKd(error);
         l​astError​ =error;
         l​astTime = runtime.time();
 

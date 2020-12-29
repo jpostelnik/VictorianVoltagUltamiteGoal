@@ -25,10 +25,11 @@ public class test extends Auto {
         waitForStart();
         runtime.reset();
         restRuntime();
-        try {
-strafe(10,1,false,0);        } catch (InterruptedException e) {
-
-        }
+//        try {
+//
+//        } catch (InterruptedException e) {
+//
+//        }
 
     }
 }

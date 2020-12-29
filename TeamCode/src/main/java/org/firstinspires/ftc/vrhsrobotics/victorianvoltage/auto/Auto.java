@@ -6,20 +6,33 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.util.ReadWriteFile;
 
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.basicMathCalls;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.KalminFilter;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.PIDController;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.Spline;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.Waypoint;
+
+import java.io.File;
+import java.util.List;
+
+import static org.firstinspires.ftc.robotcore.external.tfod.TfodCurrentGame.TFOD_MODEL_ASSET;
 
 
 /**
@@ -37,8 +50,9 @@ public abstract class Auto extends LinearOpMode {
     private final double DEAD_WHEEL_TICKS_PER_REV = 4096;
     private final double DEAD_WHEEL_TO_TICKS = DEAD_WHEEL_TICKS_PER_REV / (Math.PI * DEAD_WHEEL_DIAMTER);
 
+
     private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, capMotor;
-    private Servo hookL, clawL, gripL, towerBL, hookR, clawR, gripR, towerBR, towerTR, towerTL, guideL, guideR;
+    private Servo elevator;
     private DigitalChannel liftTouch;
 
     private BNO055IMU imu;
@@ -46,7 +60,12 @@ public abstract class Auto extends LinearOpMode {
 
     private DcMotorEx[] driveTrain;
 
-    private PIDController pid = new PIDController(runtime, 0, 0, 0);
+
+    //pids
+    private PIDController pid = new PIDController(runtime, 1.9, 0, 0.2);
+    private PIDController pidTruning = new PIDController(runtime, 1, 0, 0);
+    private PIDController pidStrafe = new PIDController(runtime, 1, 0, 0);
+    private PIDController pidDiagonal = new PIDController(runtime, 0.01, 0, 0);
 
     /**
      * checks if opmode is still running
@@ -79,30 +98,33 @@ public abstract class Auto extends LinearOpMode {
             motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         }
 
-        leftFront.setDirection(DcMotor.Direction.FORWARD);
-        leftRear.setDirection(DcMotor.Direction.FORWARD);
-        rightFront.setDirection(DcMotor.Direction.REVERSE);
-        rightRear.setDirection(DcMotor.Direction.REVERSE);
+        leftFront.setDirection(DcMotor.Direction.REVERSE);
+        leftRear.setDirection(DcMotor.Direction.REVERSE);
+        rightFront.setDirection(DcMotor.Direction.FORWARD);
+        rightRear.setDirection(DcMotor.Direction.FORWARD);
 
         telemetry.addLine("drive train done");
         telemetry.update();
 
         shootR = (DcMotorEx) hardwareMap.dcMotor.get("shootR");
+        shootL = (DcMotorEx) hardwareMap.dcMotor.get("shootL");
         intake = (DcMotorEx) hardwareMap.dcMotor.get("intake");
 
-        if(shootR ==null)
-        {
+        shootL.setDirection(DcMotor.Direction.REVERSE);
+        shootR.setDirection(DcMotor.Direction.REVERSE);
+
+        if (shootR == null) {
             telemetry.addLine("shootR is null");
             telemetry.update();
         }
 
-        if(intake ==null)
-        {
+        if (intake == null) {
             telemetry.addLine("intake is null");
             telemetry.update();
         }
-//        shootR.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-//        intake.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        shootR.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        intake.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        shootL.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
         telemetry.addLine("deadwheels done");
         telemetry.update();
@@ -112,42 +134,10 @@ public abstract class Auto extends LinearOpMode {
     /**
      * inits servos
      */
-//    private void initServos() {
-//        hookL = hardwareMap.servo.get("hookL");
-//        hookR = hardwareMap.servo.get("hookR");
-//        clawL = hardwareMap.servo.get("clawL");
-//        clawR = hardwareMap.servo.get("clawR");
-//        gripL = hardwareMap.servo.get("gripL");
-//        gripR = hardwareMap.servo.get("gripR");
-//        towerBL = hardwareMap.servo.get("towerBL");
-//        towerBR = hardwareMap.servo.get("towerBR");
-//        towerTL = hardwareMap.servo.get("towerTL");
-//        towerTR = hardwareMap.servo.get("towerTR");
-//        guideL = hardwareMap.servo.get("guideL");
-//        guideR = hardwareMap.servo.get("guideR");
-//
-//
-//        hookL.setPosition(1);
-//        hookR.setPosition(0);
-//
-//        gripL.setPosition(0);
-//        gripR.setPosition(1);
-//
-//        towerBL.setPosition(1);
-//        towerBR.setPosition(0);
-//
-//        towerTR.setPosition(1);
-//        towerTL.setPosition(0);
-//
-//        clawL.setPosition(0);
-//        clawR.setPosition(1);
-//
-//        guideL.setPosition(0);
-//        guideL.setPosition(1);
-//
-//
-//
-//    }
+    private void initServos() {
+//        elevator = hardwareMap.servo.get("elevator");
+//        elevator.setPosition(0);z
+    }
 
     /**
      * use for init the gyro
@@ -164,15 +154,79 @@ public abstract class Auto extends LinearOpMode {
         imu.initialize(parameters);
     }
 
+    private static final String VUFORIA_KEY =
+            "AXmG74D/////AAABmcbI+OuRcECkskgZxnebQ4aCvV3y4ZxNNMqL/ii0UTZ4LvJzrZXQ/Tmpjus37PyY6Qgy2esiZm1gCbpD08BG3bplvN1aDfRWlrXuhnwbsXfRT1WoJlg41K1j3jEY3+JMn3nQ0dFslzFDomXDRe9PUpuEPyZpR2uCkmWT26JOIfImG0kkdgTmYnxiuVCwE5k4qfYGZq0qxx6q5OowqkB/WLcMB9lGD5b88oGOMDXoil0JI4pZcVam4fdERnd490N9pX7mzdXYfDPntu+uYKZu9kNHbU6rqrnJJfzX3C0WXa1qF2e3zJCyR5ckciG/I4fSZgISyPwmMPO3+ss0NcboYEnPQvsG8Onwu30/Qq42B5/O";
+
+
+    /**
+     * {@link #vuforia} is the variable we will use to store our instance of the Vuforia
+     * localization engine.
+     */
+    private VuforiaLocalizer vuforia;
+
+    /**
+     * {@link #tfod} is the variable we will use to store our instance of the TensorFlow Object
+     * Detection engine.
+     */
+    private TFObjectDetector tfod;
+
+    /**
+     *
+     */
+    private void initVuforia() {
+        /*
+         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
+         */
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+
+        parameters.vuforiaLicenseKey = VUFORIA_KEY;
+        parameters.cameraName = hardwareMap.get(WebcamName.class, "Webcam 1");
+
+        //  Instantiate the Vuforia engine
+        vuforia = ClassFactory.getInstance().createVuforia(parameters);
+
+        // Loading trackables is not necessary for the TensorFlow Object Detection engine.
+    }
+
+    private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
+    private static final String LABEL_FIRST_ELEMENT = "Quad";
+    private static final String LABEL_SECOND_ELEMENT = "Single";
+
+    /**
+     * Initialize the TensorFlow Object Detection engine.
+     */
+    private void initTfod() {
+        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
+                "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+        tfodParameters.minResultConfidence = 0.8f;
+        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
+        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
+    }
+
     /**
      * this initialize every motor, servo, and sensor
      */
+
+    protected void initVision() {
+        initVuforia();
+        initTfod();
+        if (tfod != null) {
+            tfod.activate();
+        }
+    }
+
+
     protected void initialize() {
         initMotors();
         telemetry.addLine("motors int");
         telemetry.update();
-//        initServos();
+        initServos();
         initGyro();
+        initVision();
+        telemetry.addLine("all init");
+        telemetry.update();
+
     }
 
     /**
@@ -195,17 +249,38 @@ public abstract class Auto extends LinearOpMode {
         }
     }
 
+    public String getObjectAmount() {
+        List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+        String a = "";
+        for (int i = 0; i < 100; i++) {
+            for (Recognition recognition : updatedRecognitions) {
+                a =
+                        recognition.getLabel();
+                telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
+//                telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
+//                        recognition.getLeft(), recognition.getTop());
+//                telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
+//                        recognition.getRight(), recognition.getBottom());
+            }
+            telemetry.update();
+        }
+//        telemetry.addData("# Object Detected", updatedRecognitions.size());
+        telemetry.update();
+        return a;
+    }
+
     /**
      * @param distance distance in inches that the robot move
      * @param power    it is how fast the robot moves
      * @param heading  the target heading for the front of the robot
      * @throws InterruptedException if op mod is not running then it stops
      */
-    public void move(double distance, double power, int heading) throws InterruptedException {
+    public void move(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
         resetMotors();
+        pid.reset(runtime);
         double currentPosition = leftRear.getCurrentPosition();
-//        int ticks = basicMathCalls.getTicksMotor(distance, "linear");
-        int ticks = (int) (distance * LINEAR_TO_TICKS);
+        int ticks = basicMathCalls.getTicksMotor(distance, "linear");
+//        int ticks = (int) (distance * LINEAR_TO_TICKS);
         telemetry.clear();
         telemetry.addData("ticks", ticks);
         telemetry.addData("starting position", currentPosition);
@@ -227,6 +302,48 @@ public abstract class Auto extends LinearOpMode {
         telemetry.addData("ending position", leftRear.getCurrentPosition());
         telemetry.update();
 
+        halt();
+    }
+
+    public void moveByDeadWheels(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
+        pid.reset(runtime);
+        resetDeadWheels();
+        double currentPosition = shootR.getCurrentPosition();
+        int ticks = basicMathCalls.getDeadWheelTicks(distance);
+        while (ticks + currentPosition > shootR.getCurrentPosition()) ;
+        {
+            correction(0, "strait", power, 1);
+            heartbeat();
+        }
+        halt();
+    }
+
+    public void strafeByDeadWheels(double distance, double power, boolean right, int heading, ElapsedTime runtime) throws InterruptedException {
+        resetMotors();
+        pidStrafe.reset(runtime);
+        double currentPosition = intake.getCurrentPosition();
+
+        int ticks = basicMathCalls.getDeadWheelTicks(distance);
+        String direction = "";
+        if (right) {
+            leftRear.setPower(1 * power);
+            leftFront.setPower(-1 * power);
+            rightRear.setPower(-1 * power);
+            rightFront.setPower(1 * power);
+            direction = "right";
+        } else {
+            leftRear.setPower(-1 * power);
+            leftFront.setPower(1 * power);
+            rightRear.setPower(1 * power);
+            rightFront.setPower(-1 * power);
+            direction = "left";
+        }
+
+        while (ticks + currentPosition > intake.getCurrentPosition()) ;
+        {
+            correction(heading, "strafe" + direction, power, 1);
+            heartbeat();
+        }
         halt();
     }
 
@@ -275,14 +392,15 @@ public abstract class Auto extends LinearOpMode {
      * @param right    direction
      * @throws InterruptedException
      */
-    protected void strafe(double distance, double power, boolean right, int heading) throws InterruptedException {
+    protected void strafe(double distance, double power, boolean right, int heading, ElapsedTime runtime) throws InterruptedException {
         resetMotors();
-
+        pidStrafe.reset(runtime);
         double currentPosition = leftRear.getCurrentPosition();
 
         int ticks = basicMathCalls.getTicksMotor(distance, "strafe");
-
+        String direction = "";
         if (right) {
+            direction = "right";
             leftRear.setPower(1 * power);
             leftFront.setPower(-1 * power);
             rightRear.setPower(-1 * power);
@@ -292,11 +410,12 @@ public abstract class Auto extends LinearOpMode {
             leftFront.setPower(1 * power);
             rightRear.setPower(1 * power);
             rightFront.setPower(-1 * power);
-
+            direction = "left";
         }
 
         while (motorsBusy(ticks, currentPosition)) ;
         {
+            correction(heading, "strafe" + direction, power, 1);
             heartbeat();
 
         }
@@ -312,9 +431,9 @@ public abstract class Auto extends LinearOpMode {
      * @param direction either "right" or "left"
      * @throws InterruptedException throws if heartbeat throws
      */
-    protected void turnTicks(double power, double degrees, String direction) throws InterruptedException {
+    protected void turnTicks(double power, double degrees, String direction, ElapsedTime runtime) throws InterruptedException {
         resetMotors();
-
+        pidStrafe.reset(runtime);
         double currentPosition = leftRear.getCurrentPosition();
         double radians = degrees * Math.PI / 90;
         int ticks = (int) (radius * radians * LINEAR_TO_TICKS);
@@ -340,7 +459,8 @@ public abstract class Auto extends LinearOpMode {
     /**
      * this turns the robot using a pid
      *
-     * @param target   degrees that i want
+     * @param target   degrees that i want. now checks if the robot is going left or right so that we are not spinnign all the way around
+     *                 this is to help with speed and effensiency
      * @param powerMax the max power od the turn
      * @param runtime  the current time used during the pid
      * @throws InterruptedException throws if heartbeat throws
@@ -348,23 +468,27 @@ public abstract class Auto extends LinearOpMode {
     protected void turningPID(double target, double powerMax, ElapsedTime runtime) throws InterruptedException {
         PIDController pid = new PIDController(runtime, 0.9728499206, 0, 0);
         resetMotors();
+        telemetry.addData("angle", getCurrentAngle());
+        calibrateBnO055();
         pid.reset(runtime);
         double error;
+
         do {
             double current = getCurrentAngle();
             error = KalminFilter.getError(current, target);
 
             double correction = pid.correction(error, runtime);
 
-            leftRear.setPower(Range.clip(-correction, -powerMax, powerMax));
-            leftFront.setPower(Range.clip(-correction, -powerMax, powerMax));
-            rightRear.setPower(Range.clip(correction, -powerMax, powerMax));
-            rightFront.setPower(Range.clip(correction, -powerMax, powerMax));
+            leftRear.setPower(Range.clip(correction, -powerMax, powerMax));
+            leftFront.setPower(Range.clip(correction, -powerMax, powerMax));
+            rightRear.setPower(Range.clip(-correction, -powerMax, powerMax));
+            rightFront.setPower(Range.clip(-correction, -powerMax, powerMax));
 
             heartbeat();
 
 
         } while (Math.abs(error) > 3.5);
+
 
         halt();
     }
@@ -409,7 +533,6 @@ public abstract class Auto extends LinearOpMode {
         }
         boolean inv = false;
         if (degrees < 90 && degrees > -90) {
-            inv = false;
             telemetry.addLine("right");
             telemetry.update();
             leftFront.setPower(secondaryPower);
@@ -445,7 +568,7 @@ public abstract class Auto extends LinearOpMode {
      * @return returns true if the it has not reached the positions, false if it has. checks if to continue.
      */
     protected boolean deadWheelsBusy(double ticksY, double ticksX, double startingY, double startingX) {
-        return (Math.abs((shootL.getCurrentPosition() - startingX)) < Math.abs(ticksY) && Math.abs(capMotor.getCurrentPosition() - startingY) < Math.abs(ticksX));
+        return (Math.abs((shootR.getCurrentPosition() - startingX)) < Math.abs(ticksY) && Math.abs(intake.getCurrentPosition() - startingY) < Math.abs(ticksX));
     }
 
     /**
@@ -455,7 +578,6 @@ public abstract class Auto extends LinearOpMode {
      * @param max
      */
     private void correction(double targetHeading, String type, double power, double max) {
-        PIDController pid = new PIDController(runtime, 1.9, 0, 0.2);
 
         double target = targetHeading;
         double current = getCurrentAngle();
@@ -464,25 +586,42 @@ public abstract class Auto extends LinearOpMode {
         double error = KalminFilter.getError(current, target);
         telemetry.addData("error: ", error);
         telemetry.update();
-        double correction = pid.correction(error, runtime);
-        telemetry.addData("correction: ", correction);
-        telemetry.update();
-        double rightP = (Range.clip(power + correction, -max, max));
-        double leftP = Range.clip(power - correction, -max, max);
 
-        leftRear.setPower(leftP);
-        leftFront.setPower(leftP);
-        rightRear.setPower(rightP);
-        rightFront.setPower(rightP);
+        if (type.equals("strait")) {
+            double correction = pid.correction(error, runtime);
+            telemetry.addData("correction: ", correction);
+            telemetry.update();
+            double rightP = (Range.clip(power + correction, -max, max));
+            double leftP = Range.clip(power - correction, -max, max);
 
+            leftRear.setPower(leftP);
+            leftFront.setPower(leftP);
+            rightRear.setPower(rightP);
+            rightFront.setPower(rightP);
+        } else if (type.equals("strafe")) {
+            double correction = pidStrafe.correction(error, runtime);
+            {
+                if (type.contains("left")) {
+                    leftFront.setPower(Range.clip(-power - correction, -1.0, 1.0));
+                    rightFront.setPower(Range.clip(power + correction, -1.0, 1.0));
+                    leftRear.setPower(Range.clip(power - correction, -1.0, 1.0));
+                    leftRear.setPower(Range.clip(-power + correction, -1.0, 1.0));
+                } else if (type.contains("right")) {
+                    leftFront.setPower(Range.clip(power - correction, -1.0, 1.0));
+                    rightFront.setPower(Range.clip(-power + correction, -1.0, 1.0));
+                    leftRear.setPower(Range.clip(-power - correction, -1.0, 1.0));
+                    rightRear.setPower(Range.clip(power + correction, -1.0, 1.0));
+                }
+            }
+        }
     }
 
     /**
      *
      */
     public void resetDeadWheels() {
-//        shootL.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-//        shootL.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        shootL.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        shootL.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         shootR.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         shootR.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         intake.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
@@ -496,7 +635,8 @@ public abstract class Auto extends LinearOpMode {
      * @param heading
      * @throws InterruptedException
      */
-    protected void spline(double[] xCords, double[] yCords, double power, int heading, ElapsedTime runtime) throws InterruptedException {
+    protected void spline(double[] xCords, double[] yCords, double power,
+                          int heading, ElapsedTime runtime) throws InterruptedException {
         diagonalStrafe(xCords[0], yCords[0], power, heading, runtime);
         for (int i = 1; i < xCords.length; i++) {
             diagonalStrafe(xCords[i] - xCords[i - 1], yCords[i] - yCords[i - 1], power, heading, runtime);
@@ -511,14 +651,13 @@ public abstract class Auto extends LinearOpMode {
      * @param secondPower
      * @param inv
      */
-    private void correction(double targetHeading, double power, double secondPower, boolean inv) {
+    private void correction(double targetHeading, double power, double secondPower,
+                            boolean inv) {
 
-        double target = targetHeading;
         double current = getCurrentAngle();
+        double error = KalminFilter.getError(current, targetHeading);
 
-        double error = KalminFilter.getError(current, target);
-
-        double correction = pid.correction(error, runtime);
+        double correction = pidDiagonal.correction(error, runtime);
 
         double rightPowerMain = (Range.clip(power + correction, -1, 1));
         double leftPowerMain = Range.clip(power - correction, -1, 1);
@@ -539,6 +678,13 @@ public abstract class Auto extends LinearOpMode {
 
     }
 
+    /**
+     * shoots my shot
+     *
+     * @param power power of the motors. can be tuned if shooting to high or low
+     * @param time  how long i want the motors running for.
+     * @throws InterruptedException
+     */
     public void shoot(double power, double time) throws InterruptedException {
         time += runtime.time();
         while (time > runtime.time()) {
@@ -546,9 +692,16 @@ public abstract class Auto extends LinearOpMode {
             shootL.setPower(power);
             heartbeat();
         }
+        shootL.setPower(0);
+        shootR.setPower(0);
 
     }
 
+    /**
+     * for printing dead wheels while testing stuff
+     *
+     * @throws InterruptedException
+     */
     public void printDeadWheel() throws InterruptedException {
         resetDeadWheels();
         while (true) {
@@ -557,39 +710,93 @@ public abstract class Auto extends LinearOpMode {
 //        telemetry.addData("forward Left",shootL.getCurrentPosition());
             telemetry.addData("horizontal", intake.getCurrentPosition() / DEAD_WHEEL_TO_TICKS);
             telemetry.update();
+            if (gamepad1.a)
+                break;
             heartbeat();
         }
 
     }
 
-
-    public void spline(double[] xCords, double[] yCords, double targetHeading, double power) throws InterruptedException {
-        Spline spline = new Spline(xCords, yCords);
+    /**
+     * @param spline
+     * @param arcLen
+     * @param targetHeading
+     * @param power
+     * @throws InterruptedException
+     */
+    public void spline(Spline spline, double arcLen, double targetHeading, double power) throws
+            InterruptedException {
         resetDeadWheels();
         resetMotors();
-        double startPosition = shootR.getCurrentPosition();
-        double arcLen = spline.arcLength();
-        telemetry.addData("arc length",arcLen);
+        double lastx;
+        double lasty;
+        lasty = intake.getCurrentPosition();
+        double startPosition = lastx = shootR.getCurrentPosition();
+
+
+        telemetry.addData("arc length", arcLen);
+        double distance = 0;
         double t = 0;
-        while (t < 1) {
+        double maxTime = runtime.time() + 6;
+        while (t < 1 /*&& (runtime.time() < maxTime)*/) {
             double xPosition = spline.getXLength(t);
             double yPosition = spline.getYLength(t);
-            double theta = Math.atan2(Math.sqrt(Math.pow(xPosition, 2) + Math.pow(shootR.getCurrentPosition(), 2)), Math.sqrt(Math.pow(yPosition, 2) + Math.pow(intake.getCurrentPosition(), 2)));
+            double theta = Math.atan2(xPosition - shootR.getCurrentPosition(), yPosition - intake.getCurrentPosition());
             theta = Math.toDegrees(theta);
+            System.out.printf("angle: %2f", theta);
+            System.out.printf("angle: %2f", theta);
             telemetry.clear();
-            telemetry.addData("angle",theta);
+            telemetry.addData("angle", theta);
             boolean inv = false;
             if (theta < 90 && theta > -90) {
                 inv = true;
+//                power *= -1;
             }
-//            double sp = basicMathCalls.getSecondPower(theta, power);
-//            correction(targetHeading, power, sp, inv);
-            correction(theta,"Spline",power,1);
+            double sp = Range.clip(basicMathCalls.getSecondPower(theta, power), -power, power);
+            if (!inv) {
+                leftFront.setPower(sp);
+                leftRear.setPower(power);
+                rightFront.setPower(power);
+                rightRear.setPower(sp);
+            } else {
+                leftFront.setPower(power);
+                leftRear.setPower(sp);
+                rightFront.setPower(sp);
+                rightRear.setPower(power);
+            }
+
+            correction(targetHeading, power, sp, inv);
+//            correction(theta,"Spline",power,1);
+
             heartbeat();
-            double distance = shootR.getCurrentPosition()-startPosition;
-            t += Math.abs(distance / arcLen);
+
+            /*
+              should now be correct just incase it goes backwoards on its Y axis or shootR
+             */
+
+            distance += Math.sqrt(Math.pow(Math.abs(shootR.getCurrentPosition() - lastx), 2) + Math.pow(Math.abs(intake.getCurrentPosition() - lasty), 2));
+
+            lastx = shootR.getCurrentPosition();
+            lasty = intake.getCurrentPosition();
+            t += 0.01;
+//            t += Math.abs(distance / arcLen);
+            telemetry.addData("t = ", t);
+            telemetry.update();
         }
         halt();
+    }
+
+    private void calibrateBnO055() {
+        BNO055IMU.CalibrationData calibrationData = imu.readCalibrationData();
+
+        // Save the calibration data to a file. You can choose whatever file
+        // name you wish here, but you'll want to indicate the same file name
+        // when you initialize the IMU in an opmode in which it is used. If you
+        // have more than one IMU on your robot, you'll of course want to use
+        // different configuration file names for each.
+        String filename = "AdafruitIMUCalibration.json";
+        File file = AppUtil.getInstance().getSettingsFile(filename);
+        ReadWriteFile.writeFile(file, calibrationData.serialize());
     }
 }
 
