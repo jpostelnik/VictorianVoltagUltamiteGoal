@@ -273,7 +273,7 @@ public abstract class Auto extends LinearOpMode {
         telemetry.update();
         return a;
     }
-
+    @Deprecated
     /**
      * @param distance distance in inches that the robot move
      * @param power    it is how fast the robot moves
@@ -400,7 +400,7 @@ public abstract class Auto extends LinearOpMode {
             motor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         }
     }
-
+    @Deprecated
     /**
      * moves the robot in a lateral direction
      *
