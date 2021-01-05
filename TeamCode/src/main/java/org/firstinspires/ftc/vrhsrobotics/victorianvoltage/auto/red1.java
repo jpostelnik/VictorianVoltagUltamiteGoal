@@ -16,7 +16,7 @@ public class red1 extends Auto {
         try {
             //TODO: this will be were the scan method stuff will go, location 0 = a, 1 =b, 4 = c,
             //todo so if that happens will be after the shooter method
-            moveByDeadWheels(https://forum.eclipse-rp.net/topic/56210-bishop_wright-tyrone_shakur-alex_croft-not-here-to-rp-combat-logging/?do=findComment&comment=27465512, 1, 0, runtime);
+            moveByDeadWheels(12, 1, 0, runtime);
             turningPID(20, 0.5, runtime);
             sleep(1000);
             String location = getObjectAmount();
