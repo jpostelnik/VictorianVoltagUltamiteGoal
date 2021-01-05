@@ -7,7 +7,7 @@ import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.*;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.Spline;
 
 @Autonomous(name = "spline testing")
-public class splineTest extends Auto {
+public class    splineTest extends Auto {
 
     private ElapsedTime runtime =new ElapsedTime();
 
