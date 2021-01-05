@@ -25,11 +25,16 @@ public class test extends Auto {
         waitForStart();
         runtime.reset();
         restRuntime();
-//        try {
-//
-//        } catch (InterruptedException e) {
-//
-//        }
+        try {
+            moveByDeadWheels(24,1,0,runtime);
+            moveByDeadWheels(-24,1,0,runtime);
+            strafeByDeadWheels(24,1,true,0,runtime);
+            strafeByDeadWheels(24,1,false,0,runtime);
+
+
+        } catch (InterruptedException e) {
+
+        }
 
     }
 }

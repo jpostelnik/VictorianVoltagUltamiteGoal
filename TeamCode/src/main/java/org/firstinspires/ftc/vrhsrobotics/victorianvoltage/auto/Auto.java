@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto;
 
+import com.google.gson.internal.$Gson$Preconditions;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -14,6 +15,7 @@ import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.util.ReadWriteFile;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -138,8 +140,8 @@ public abstract class Auto extends LinearOpMode {
      * inits servos
      */
     private void initServos() {
-//        elevator = hardwareMap.servo.get("elevator");
-//        elevator.setPosition(0);z
+        elevator = hardwareMap.servo.get("elevator");
+        elevator.setPosition(0);
     }
 
     /**
@@ -281,13 +283,17 @@ public abstract class Auto extends LinearOpMode {
     public void move(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
         resetMotors();
         pid.reset(runtime);
+        double deadWheelStart = -1*shootR.getCurrentPosition();
+        ;
         double currentPosition = leftRear.getCurrentPosition();
         int ticks = basicMathCalls.getTicksMotor(distance, "linear");
 //        int ticks = (int) (distance * LINEAR_TO_TICKS);
         telemetry.clear();
+        telemetry.addData("starting distance",deadWheelStart/DEAD_WHEEL_TO_TICKS);
         telemetry.addData("ticks", ticks);
         telemetry.addData("starting position", currentPosition);
         telemetry.update();
+        sleep(1000);
         for (DcMotorEx motor : driveTrain) {
             motor.setPower(power);
         }
@@ -297,13 +303,17 @@ public abstract class Auto extends LinearOpMode {
         {
             telemetry.clear();
             telemetry.addData("ticks left", ticks - (leftRear.getCurrentPosition()));
+            System.out.println("distance traveled "+(-1*shootR.getCurrentPosition()-deadWheelStart)/DEAD_WHEEL_TO_TICKS);
+            telemetry.addData("distance traveled", (shootR.getCurrentPosition()-deadWheelStart)/DEAD_WHEEL_TO_TICKS);
             correction(heading, "strait", power, 1);
             heartbeat();
             telemetry.update();
 
         }
         telemetry.addData("ending position", leftRear.getCurrentPosition());
+        telemetry.addData("distance traveled", (-1*shootR.getCurrentPosition()-deadWheelStart)/DEAD_WHEEL_TO_TICKS);
         telemetry.update();
+
 
         halt();
     }
@@ -313,9 +323,12 @@ public abstract class Auto extends LinearOpMode {
         resetDeadWheels();
         double currentPosition = shootR.getCurrentPosition();
         int ticks = basicMathCalls.getDeadWheelTicks(distance);
-        while (ticks + currentPosition > shootR.getCurrentPosition()) ;
+        for (DcMotorEx motors : driveTrain) {
+            motors.setPower(power);
+        }
+        while (Math.abs(shootR.getCurrentPosition() - currentPosition) < ticks) ;
         {
-            correction(0, "strait", power, 1);
+            correction(heading, "strait", power, 1);
             heartbeat();
         }
         halt();
@@ -323,6 +336,7 @@ public abstract class Auto extends LinearOpMode {
 
     public void strafeByDeadWheels(double distance, double power, boolean right, int heading, ElapsedTime runtime) throws InterruptedException {
         resetMotors();
+        resetDeadWheels();
         pidStrafe.reset(runtime);
         double currentPosition = intake.getCurrentPosition();
 
@@ -342,7 +356,7 @@ public abstract class Auto extends LinearOpMode {
             direction = "left";
         }
 
-        while (ticks + currentPosition > intake.getCurrentPosition()) ;
+        while (Math.abs(intake.getCurrentPosition() - currentPosition) < ticks) ;
         {
             correction(heading, "strafe" + direction, power, 1);
             heartbeat();
@@ -623,10 +637,16 @@ public abstract class Auto extends LinearOpMode {
      *
      */
     public void resetDeadWheels() {
+//        shootL.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
         shootL.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         shootL.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        shootL.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+//        shootR.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
         shootR.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         shootR.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        shootR.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+//        intake.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        intake.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         intake.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         intake.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
     }
@@ -777,7 +797,7 @@ public abstract class Auto extends LinearOpMode {
               should now be correct just incase it goes backwoards on its Y axis or shootR
              */
 
-            distance += Math.sqrt(Math.pow(Math.abs(shootR.getCurrentPosition() - lastx), 2) + Math.pow(Math.abs(intake.getCurrentPosition() - lasty), 2));
+            distance += Math.sqrt(Math.pow(Math.abs(-shootR.getCurrentPosition() - lastx), 2) + Math.pow(Math.abs(intake.getCurrentPosition() - lasty), 2));
 
             lastx = shootR.getCurrentPosition();
             lasty = intake.getCurrentPosition();

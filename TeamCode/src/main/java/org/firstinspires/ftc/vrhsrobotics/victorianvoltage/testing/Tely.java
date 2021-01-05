@@ -16,7 +16,7 @@ public class Tely extends Auto {
     private final double LINEAR_TO_TICKS = TICKS_PER_REV / (Math.PI * DRIVETRAIN_WHEEL_DIAMTER * DRIVETRAIN_GEAR_RATIO);
 
     private DcMotor rightFront, leftFront, rightRear, leftRear, shootR, shootL;
-    private Servo elevator;
+    private Servo servo1;
 
     ElapsedTime runTime = new ElapsedTime();
     double servoPostion =0.45;
@@ -45,10 +45,8 @@ public class Tely extends Auto {
         waitForStart();
         runTime.reset();
         boolean shooterOn = false;
-        boolean change = false;
         while (opModeIsActive())
         {
-
             double drive = -gamepad1.left_stick_y;
             double turn = -gamepad1.right_stick_y;
 
@@ -61,25 +59,14 @@ public class Tely extends Auto {
             leftFront.setPower(leftPower);
             rightRear.setPower(rightPower);
             rightFront.setPower(rightPower);
-            if(gamepad1.x){
-            if(!change) {
-                if (elevator.getPosition() == 0) {
-                    elevator.setPosition(1.0);
-                    change = true;
-                } else {
-                    elevator.setPosition(0.0);
-                    change = true;
-                }
-            }
-            }
+
+
             if(gamepad1.a)
             {
-
                 if(!shooterOn) {
                     shootL.setPower(1);
                     shootR.setPower(1);
                     shooterOn = true;
-
                 }else{
                     shootL.setPower(0);
                     shootR.setPower(0);

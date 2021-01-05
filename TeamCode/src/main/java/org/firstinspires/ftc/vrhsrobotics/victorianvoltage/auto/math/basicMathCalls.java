@@ -11,7 +11,7 @@ public class basicMathCalls {
     private static final double STRAFE_COEFFICIENT = 1.20;
     private static final double DEAD_WHEEL_DIAMTER = 2;
     private static final double DEAD_WHEEL_TICKS_PER_REV = 4096;
-    private static final double DEAD_WHEEL_TO_TICKS = DEAD_WHEEL_TICKS_PER_REV / (Math.PI * DEAD_WHEEL_DIAMTER);
+    private static final double DEAD_WHEEL_TO_TICKS = DEAD_WHEEL_TICKS_PER_REV / (Math.PI * DEAD_WHEEL_DIAMTER); //652.229
 
 
     public static double getSecondPower(double degrees, double power) {
@@ -71,6 +71,6 @@ public class basicMathCalls {
     }
 
     public static int getDeadWheelTicks(double distance) {
-        return (int) (distance * DEAD_WHEEL_DIAMTER);
+        return (int) (distance * DEAD_WHEEL_TO_TICKS);
     }
 }
