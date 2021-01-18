@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.util.ReadWriteFile;
@@ -36,6 +37,7 @@ import java.util.List;
 
 import static org.firstinspires.ftc.robotcore.external.tfod.TfodCurrentGame.TFOD_MODEL_ASSET;
 
+
 /*
 * test test test*/
 
@@ -52,13 +54,13 @@ public abstract class Auto extends LinearOpMode {
     private final double radius = 6.5;
     private final double STRAFE_COEFFICIENT = 1.20;
     private final double DEAD_WHEEL_DIAMTER = 2;
-    private final double DEAD_WHEEL_TICKS_PER_REV = 4096;
+    private final double DEAD_WHEEL_TICKS_PER_REV = 4096*2;
     private final double DEAD_WHEEL_TO_TICKS = DEAD_WHEEL_TICKS_PER_REV / (Math.PI * DEAD_WHEEL_DIAMTER);
 
 
     private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, capMotor;
     private Servo elevator;
-    private DigitalChannel liftTouch;
+    private TouchSensor liftTouchBottom;
 
     private BNO055IMU imu;
     private ElapsedTime runtime = new ElapsedTime();
@@ -85,6 +87,11 @@ public abstract class Auto extends LinearOpMode {
 
     protected void restRuntime() {
         runtime.reset();
+    }
+
+
+    private void intSensors(){
+        liftTouchBottom = hardwareMap.touchSensor.get("liftTouchBottom");
     }
 
     /**
@@ -141,7 +148,7 @@ public abstract class Auto extends LinearOpMode {
      */
     private void initServos() {
         elevator = hardwareMap.servo.get("elevator");
-        elevator.setPosition(0);
+        elevator.setPosition(1);
     }
 
     /**
@@ -158,6 +165,7 @@ public abstract class Auto extends LinearOpMode {
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         imu.initialize(parameters);
     }
+
 
     private static final String VUFORIA_KEY =
             "AXmG74D/////AAABmcbI+OuRcECkskgZxnebQ4aCvV3y4ZxNNMqL/ii0UTZ4LvJzrZXQ/Tmpjus37PyY6Qgy2esiZm1gCbpD08BG3bplvN1aDfRWlrXuhnwbsXfRT1WoJlg41K1j3jEY3+JMn3nQ0dFslzFDomXDRe9PUpuEPyZpR2uCkmWT26JOIfImG0kkdgTmYnxiuVCwE5k4qfYGZq0qxx6q5OowqkB/WLcMB9lGD5b88oGOMDXoil0JI4pZcVam4fdERnd490N9pX7mzdXYfDPntu+uYKZu9kNHbU6rqrnJJfzX3C0WXa1qF2e3zJCyR5ckciG/I4fSZgISyPwmMPO3+ss0NcboYEnPQvsG8Onwu30/Qq42B5/O";
@@ -221,14 +229,21 @@ public abstract class Auto extends LinearOpMode {
         }
     }
 
-
     protected void initialize() {
         initMotors();
         telemetry.addLine("motors int");
         telemetry.update();
         initServos();
+        telemetry.addLine("servos int");
+        telemetry.update();
         initGyro();
+        telemetry.addLine("gyro int");
+        telemetry.update();
         initVision();
+        telemetry.addLine("vision int");
+        telemetry.update();
+        intSensors();
+        telemetry.addLine("sensors int");
         telemetry.addLine("all init");
         telemetry.update();
 
@@ -254,6 +269,7 @@ public abstract class Auto extends LinearOpMode {
         }
     }
 
+
     public String getObjectAmount() {
         List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
         String a = "";
@@ -262,10 +278,10 @@ public abstract class Auto extends LinearOpMode {
                 a =
                         recognition.getLabel();
                 telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
-//                telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
-//                        recognition.getLeft(), recognition.getTop());
-//                telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
-//                        recognition.getRight(), recognition.getBottom());
+                telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
+                        recognition.getLeft(), recognition.getTop());
+                telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
+                        recognition.getRight(), recognition.getBottom());
             }
             telemetry.update();
         }
@@ -273,6 +289,8 @@ public abstract class Auto extends LinearOpMode {
         telemetry.update();
         return a;
     }
+
+
     @Deprecated
     /**
      * @param distance distance in inches that the robot move
@@ -439,7 +457,7 @@ public abstract class Auto extends LinearOpMode {
         halt();
 
     }
-
+    @Deprecated
     /**
      * used for turning just by ticks
      *
