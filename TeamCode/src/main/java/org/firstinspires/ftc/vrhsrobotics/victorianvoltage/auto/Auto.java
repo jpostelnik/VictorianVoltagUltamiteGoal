@@ -1,44 +1,34 @@
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto;
 
-import com.google.gson.internal.$Gson$Preconditions;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.util.ReadWriteFile;
 
-import org.firstinspires.ftc.robotcore.external.ClassFactory;
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
-import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
-import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.basicMathCalls;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.KalminFilter;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.PIDController;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.Spline;
-import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.Waypoint;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.vuforia.SkystoneDeterminationPipeline;
+import org.openftc.easyopencv.OpenCvCamera;
+import org.openftc.easyopencv.OpenCvCameraFactory;
+import org.openftc.easyopencv.OpenCvCameraRotation;
 
 import java.io.File;
-import java.util.List;
-
-import static org.firstinspires.ftc.robotcore.external.tfod.TfodCurrentGame.TFOD_MODEL_ASSET;
 
 
-/*
+/*bsfd
 * test test test*/
 
 
@@ -54,12 +44,12 @@ public abstract class Auto extends LinearOpMode {
     private final double radius = 6.5;
     private final double STRAFE_COEFFICIENT = 1.20;
     private final double DEAD_WHEEL_DIAMTER = 2;
-    private final double DEAD_WHEEL_TICKS_PER_REV = 4096*2;
+    private final double DEAD_WHEEL_TICKS_PER_REV = 4096;
     private final double DEAD_WHEEL_TO_TICKS = DEAD_WHEEL_TICKS_PER_REV / (Math.PI * DEAD_WHEEL_DIAMTER);
 
 
     private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, capMotor;
-    private Servo elevator;
+    private Servo elevator, arm, hook;
     private TouchSensor liftTouchBottom;
 
     private BNO055IMU imu;
@@ -73,6 +63,11 @@ public abstract class Auto extends LinearOpMode {
     private PIDController pidTruning = new PIDController(runtime, 1, 0, 0);
     private PIDController pidStrafe = new PIDController(runtime, 1, 0, 0);
     private PIDController pidDiagonal = new PIDController(runtime, 0.01, 0, 0);
+
+    protected WebcamName weCam;
+    protected OpenCvCamera camera;
+    protected SkystoneDeterminationPipeline pipeline;
+
 
     /**
      * checks if opmode is still running
@@ -130,6 +125,8 @@ public abstract class Auto extends LinearOpMode {
             telemetry.update();
         }
 
+
+
         if (intake == null) {
             telemetry.addLine("intake is null");
             telemetry.update();
@@ -149,6 +146,34 @@ public abstract class Auto extends LinearOpMode {
     private void initServos() {
         elevator = hardwareMap.servo.get("elevator");
         elevator.setPosition(1);
+
+        arm = hardwareMap.servo.get("arm");
+        arm.setPosition(0);
+
+        hook = hardwareMap.servo.get("hook");
+        hook.setPosition(1);
+    }
+
+    protected void intCamera(){
+        weCam = hardwareMap.get(WebcamName.class, "Webcam 1");
+        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        camera = OpenCvCameraFactory.getInstance().createWebcam(weCam, cameraMonitorViewId);
+        pipeline = new SkystoneDeterminationPipeline();
+        camera.setPipeline(pipeline);
+
+        // We set the viewport policy to optimized view so the preview doesn't appear 90 deg
+        // out when the RC activity is in portrait. We do our actual image processing assuming
+        // landscape orientation, though.
+//        camera.setViewportRenderingPolicy(OpenCvCamera.ViewportRenderingPolicy.OPTIMIZE_VIEW);
+
+        camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
+        {
+            @Override
+            public void onOpened()
+            {
+                camera.startStreaming(320,240, OpenCvCameraRotation.SIDEWAYS_LEFT);
+            }
+        });
     }
 
     /**
@@ -167,67 +192,67 @@ public abstract class Auto extends LinearOpMode {
     }
 
 
-    private static final String VUFORIA_KEY =
-            "AXmG74D/////AAABmcbI+OuRcECkskgZxnebQ4aCvV3y4ZxNNMqL/ii0UTZ4LvJzrZXQ/Tmpjus37PyY6Qgy2esiZm1gCbpD08BG3bplvN1aDfRWlrXuhnwbsXfRT1WoJlg41K1j3jEY3+JMn3nQ0dFslzFDomXDRe9PUpuEPyZpR2uCkmWT26JOIfImG0kkdgTmYnxiuVCwE5k4qfYGZq0qxx6q5OowqkB/WLcMB9lGD5b88oGOMDXoil0JI4pZcVam4fdERnd490N9pX7mzdXYfDPntu+uYKZu9kNHbU6rqrnJJfzX3C0WXa1qF2e3zJCyR5ckciG/I4fSZgISyPwmMPO3+ss0NcboYEnPQvsG8Onwu30/Qq42B5/O";
-
-
-    /**
-     * {@link #vuforia} is the variable we will use to store our instance of the Vuforia
-     * localization engine.
-     */
-    private VuforiaLocalizer vuforia;
-
-    /**
-     * {@link #tfod} is the variable we will use to store our instance of the TensorFlow Object
-     * Detection engine.
-     */
-    private TFObjectDetector tfod;
-
-    /**
-     *
-     */
-    private void initVuforia() {
-        /*
-         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
-         */
-        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
-
-        parameters.vuforiaLicenseKey = VUFORIA_KEY;
-        parameters.cameraName = hardwareMap.get(WebcamName.class, "Webcam 1");
-
-        //  Instantiate the Vuforia engine
-        vuforia = ClassFactory.getInstance().createVuforia(parameters);
-
-        // Loading trackables is not necessary for the TensorFlow Object Detection engine.
-    }
-
-    private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
-    private static final String LABEL_FIRST_ELEMENT = "Quad";
-    private static final String LABEL_SECOND_ELEMENT = "Single";
-
-    /**
-     * Initialize the TensorFlow Object Detection engine.
-     */
-    private void initTfod() {
-        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
-                "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
-        tfodParameters.minResultConfidence = 0.8f;
-        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
-        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
-    }
-
-    /**
-     * this initialize every motor, servo, and sensor
-     */
-
-    protected void initVision() {
-        initVuforia();
-        initTfod();
-        if (tfod != null) {
-            tfod.activate();
-        }
-    }
+//    private static final String VUFORIA_KEY =
+//            "AXmG74D/////AAABmcbI+OuRcECkskgZxnebQ4aCvV3y4ZxNNMqL/ii0UTZ4LvJzrZXQ/Tmpjus37PyY6Qgy2esiZm1gCbpD08BG3bplvN1aDfRWlrXuhnwbsXfRT1WoJlg41K1j3jEY3+JMn3nQ0dFslzFDomXDRe9PUpuEPyZpR2uCkmWT26JOIfImG0kkdgTmYnxiuVCwE5k4qfYGZq0qxx6q5OowqkB/WLcMB9lGD5b88oGOMDXoil0JI4pZcVam4fdERnd490N9pX7mzdXYfDPntu+uYKZu9kNHbU6rqrnJJfzX3C0WXa1qF2e3zJCyR5ckciG/I4fSZgISyPwmMPO3+ss0NcboYEnPQvsG8Onwu30/Qq42B5/O";
+//
+//
+//    /**
+//     * {@link #vuforia} is the variable we will use to store our instance of the Vuforia
+//     * localization engine.
+//     */
+//    private VuforiaLocalizer vuforia;
+//
+//    /**
+//     * {@link #tfod} is the variable we will use to store our instance of the TensorFlow Object
+//     * Detection engine.
+//     */
+//    private TFObjectDetector tfod;
+//
+//    /**
+//     *
+//     */
+//    private void initVuforia() {
+//        /*
+//         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
+//         */
+//        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+//
+//        parameters.vuforiaLicenseKey = VUFORIA_KEY;
+//        parameters.cameraName = hardwareMap.get(WebcamName.class, "Webcam 1");
+//
+//        //  Instantiate the Vuforia engine
+//        vuforia = ClassFactory.getInstance().createVuforia(parameters);
+//
+//        // Loading trackables is not necessary for the TensorFlow Object Detection engine.
+//    }
+//
+//    private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
+//    private static final String LABEL_FIRST_ELEMENT = "Quad";
+//    private static final String LABEL_SECOND_ELEMENT = "Single";
+//
+//    /**
+//     * Initialize the TensorFlow Object Detection engine.
+//     */
+//    private void initTfod() {
+//        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
+//                "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+//        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+//        tfodParameters.minResultConfidence = 0.8f;
+//        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
+//        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
+//    }
+//
+//    /**
+//     * this initialize every motor, servo, and sensor
+//     */
+//
+//    protected void initVision() {
+//        initVuforia();
+//        initTfod();
+//        if (tfod != null) {
+//            tfod.activate();
+//        }
+//    }
 
     protected void initialize() {
         initMotors();
@@ -239,7 +264,8 @@ public abstract class Auto extends LinearOpMode {
         initGyro();
         telemetry.addLine("gyro int");
         telemetry.update();
-        initVision();
+//        initVision();
+        intCamera();
         telemetry.addLine("vision int");
         telemetry.update();
         intSensors();
@@ -270,25 +296,25 @@ public abstract class Auto extends LinearOpMode {
     }
 
 
-    public String getObjectAmount() {
-        List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
-        String a = "";
-        for (int i = 0; i < 100; i++) {
-            for (Recognition recognition : updatedRecognitions) {
-                a =
-                        recognition.getLabel();
-                telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
-                telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
-                        recognition.getLeft(), recognition.getTop());
-                telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
-                        recognition.getRight(), recognition.getBottom());
-            }
-            telemetry.update();
-        }
-//        telemetry.addData("# Object Detected", updatedRecognitions.size());
-        telemetry.update();
-        return a;
-    }
+//    public String getObjectAmount() {
+//        List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+//        String a = "";
+//        for (int i = 0; i < 100; i++) {
+//            for (Recognition recognition : updatedRecognitions) {
+//                a =
+//                        recognition.getLabel();
+//                telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
+//                telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
+//                        recognition.getLeft(), recognition.getTop());
+//                telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
+//                        recognition.getRight(), recognition.getBottom());
+//            }
+//            telemetry.update();
+//        }
+////        telemetry.addData("# Object Detected", updatedRecognitions.size());
+//        telemetry.update();
+//        return a;
+//    }
 
 
     @Deprecated
@@ -398,14 +424,15 @@ public abstract class Auto extends LinearOpMode {
             motor.setPower(power);
         }
         while (runtime.seconds() < endTime) {
+            printTicks();
             heartbeat();
         }
         halt();
-
-        double endingPositon = leftRear.getCurrentPosition();
-
-        telemetry.addData("change in positions in ticks", (endingPositon + statingPosition));
-        telemetry.update();
+//
+//        double endingPositon = leftRear.getCurrentPosition();
+//
+//        telemetry.addData("change in positions in ticks", (endingPositon + statingPosition));
+//        telemetry.update();
     }
 
     /**
@@ -756,6 +783,21 @@ public abstract class Auto extends LinearOpMode {
             heartbeat();
         }
 
+    }
+
+    public void printTicks(){
+        telemetry.clear();
+        telemetry.addData("forward right", shootR.getCurrentPosition() / DEAD_WHEEL_TO_TICKS);
+        telemetry.addData("forward Left",shootL.getCurrentPosition()/DEAD_WHEEL_TO_TICKS);
+        telemetry.addData("horizontal", intake.getCurrentPosition() / DEAD_WHEEL_TO_TICKS);
+        telemetry.addData("Right Front ticks",rightFront.getCurrentPosition()/LINEAR_TO_TICKS);
+        telemetry.addData("Left Front ticks",leftFront.getCurrentPosition()/LINEAR_TO_TICKS);
+        telemetry.addData("Right Rear ticks",rightRear.getCurrentPosition()/LINEAR_TO_TICKS);
+        telemetry.addData("Left Rear ticks",leftRear.getCurrentPosition()/LINEAR_TO_TICKS);
+        telemetry.addData("velocity",rightFront.getVelocity());
+
+
+        telemetry.update();
     }
 
     /**

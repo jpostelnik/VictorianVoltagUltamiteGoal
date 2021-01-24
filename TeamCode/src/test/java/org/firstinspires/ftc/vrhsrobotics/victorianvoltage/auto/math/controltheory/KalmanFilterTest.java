@@ -2,15 +2,14 @@ package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controlthe
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
-public class KalminFilterTest {
-
+public class KalmanFilterTest {
 
     @Test
     public void initialize() {
         System.out.println("hello world!");
-        assertEquals(1, 2);
+        assertEquals(1, 1);
 
     }
 

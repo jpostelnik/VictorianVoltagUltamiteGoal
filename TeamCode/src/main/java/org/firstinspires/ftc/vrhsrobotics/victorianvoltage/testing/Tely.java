@@ -43,7 +43,7 @@ public class Tely extends Auto {
 
         shootL.setDirection(DcMotor.Direction.REVERSE);
         shootR.setDirection(DcMotor.Direction.REVERSE);
-        intake.setDirection(DcMotor.Direction.REVERSE);
+        intake.setDirection(DcMotor.Direction.FORWARD);
 
 
         //servos
