@@ -1,140 +1,316 @@
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.testing;
 
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.Auto;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.helper.PositionTracker;
 
-@TeleOp(name = "kms")
-public class Tely extends Auto {
-
-    private final double TICKS_PER_REV = 1120;
-    private final double DRIVETRAIN_WHEEL_DIAMTER = 4;
-    private final double DRIVETRAIN_GEAR_RATIO = 5 / 6;
-    private final double LINEAR_TO_TICKS = TICKS_PER_REV / (Math.PI * DRIVETRAIN_WHEEL_DIAMTER * DRIVETRAIN_GEAR_RATIO);
-
-    private DcMotor rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake;
-    private Servo elevator;
-    private CRServo intakeServoRight, intakeServoLeft;
-
-    ElapsedTime runTime = new ElapsedTime();
-    double servoPostion = 0.45;
+@TeleOp(name = "telly")
+public class Tely extends OpMode {
+    private ElapsedTime runtime = new ElapsedTime();
+    private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, capMotor;
+    private Servo elevator, arm, hook;
+    private boolean precision, direction, precisionChanged, directionChanged;
+    private boolean useOneGamepad;
+    private boolean positionChanged = false;
+    private boolean closed = false, down = false;
+    private boolean deployerPositionChanged = false;
+    private boolean deployerClosed = false;
+    private double baseParallelRightPosition;
+    private double baseParallelLeftPosition;
+    private double basePerpendicularPosition;
+    private final int deadWheelTicks = 4096;
+    private final double WHEEL_CIRCUMFERENCE_IN = Math.PI*3.05; //circumference of parallel deadwheel
+    private final double DEADWHEEL_INCHES_OVER_TICKS = WHEEL_CIRCUMFERENCE_IN/deadWheelTicks;
+    private double time = -999;
+    private PositionTracker positionTracker = new PositionTracker(0, 0, 0);
 
     @Override
-    public void runOpMode() {
-        leftFront = hardwareMap.dcMotor.get("leftFront");
-        rightFront = hardwareMap.dcMotor.get("rightFront");
-        rightRear = hardwareMap.dcMotor.get("rightRear");
-        leftRear = hardwareMap.dcMotor.get("leftRear");
+    public void init() {
+        //after driver hits init
+        setUpDriveTrain();
+        setUpIntake();
+        setUpShoot();
+        setUpServos();
 
-        leftFront.setDirection(DcMotor.Direction.FORWARD);
-        leftRear.setDirection(DcMotor.Direction.FORWARD);
-        rightFront.setDirection(DcMotor.Direction.REVERSE);
-        rightRear.setDirection(DcMotor.Direction.REVERSE);
+        precision = false;
+        direction = false;
+        useOneGamepad = false;
+        precisionChanged = false;
+        directionChanged = false;
 
-        shootL = hardwareMap.dcMotor.get("shootL");
-        shootR = hardwareMap.dcMotor.get("shootR");
-        intake = hardwareMap.dcMotor.get("intake");
+        closed = false;
+        positionChanged = false;
+
+        telemetry.addData("Status", "Initialized");
+
+        baseParallelLeftPosition = shootL.getCurrentPosition();
+        baseParallelRightPosition = shootR.getCurrentPosition();
+        basePerpendicularPosition = intake.getCurrentPosition();
+    }
+
+    public void setUpDriveTrain() {
+        leftFront = (DcMotorEx) hardwareMap.dcMotor.get("leftFront");
+        rightFront = (DcMotorEx) hardwareMap.dcMotor.get("rightFront");
+        rightRear = (DcMotorEx) hardwareMap.dcMotor.get("rightRear");
+        leftRear = (DcMotorEx) hardwareMap.dcMotor.get("leftRear");
+        
+
+        leftFront.setDirection(DcMotor.Direction.REVERSE);
+        leftRear.setDirection(DcMotor.Direction.REVERSE);
+        rightFront.setDirection(DcMotor.Direction.FORWARD);
+        rightRear.setDirection(DcMotor.Direction.FORWARD);
+
+        telemetry.addLine("drive train done");
+        telemetry.update();
+
+        
+        intake = (DcMotorEx) hardwareMap.dcMotor.get("intake");
 
         shootL.setDirection(DcMotor.Direction.REVERSE);
         shootR.setDirection(DcMotor.Direction.REVERSE);
-        intake.setDirection(DcMotor.Direction.FORWARD);
 
-
-        //servos
-        elevator = hardwareMap.servo.get("elevator");
-        intakeServoLeft = hardwareMap.crservo.get("intakeServoLeft");
-        intakeServoRight = hardwareMap.crservo.get("intakeServoRight");
-        intakeServoLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-
-        telemetry.addLine("robot ready");
-        telemetry.update();
-
-        waitForStart();
-        boolean isTop = false;
-        runTime.reset();
-        boolean shooterOn = false, intakeRunning = false;
-        while (opModeIsActive()) {
-            double drive = -gamepad1.left_stick_y;
-            double turn = -gamepad1.right_stick_y;
-
-            double leftPower = Range.clip(drive - turn, -1, 1);
-            double rightPower = Range.clip(drive + turn, -1, 1);
-
-
-            leftRear.setPower(leftPower);
-            leftFront.setPower(leftPower);
-            rightRear.setPower(rightPower);
-            rightFront.setPower(rightPower);
-
-//            if (gamepad2.x) {
-//                if (!isTop || elevator.getPosition() < 0.5) {
-//                    isTop = true;
-//                    elevator.setPosition(1.0);
-//                } else {
-//                    elevator.setPosition(0.0);
-//                    isTop = false;
-//
-//                }
-//            }
-            if (gamepad2.dpad_up) {
-                elevator.setPosition(1.0);
-            }
-            if (gamepad2.dpad_down) {
-                elevator.setPosition(0);
-
-            }
-            if (gamepad2.x) {
-                double a = elevator.getPosition();
-                elevator.setPosition(a + 0.05);
-            }
-            if (gamepad2.b) {
-                double a = elevator.getPosition();
-                elevator.setPosition(a - 0.05);
-            }
-            if (gamepad2.a) {
-                if (!shooterOn) {
-                    shootL.setPower(1);
-                    shootR.setPower(1);
-                    shooterOn = true;
-                } else {
-                    shootL.setPower(0);
-                    shootR.setPower(0);
-                    shooterOn = false;
-                }
-            }
-
-            if (gamepad1.a) {
-                if (intakeRunning) {
-                    intakeRunning=false;
-                    intake.setPower(0);
-                } else {
-                    intakeRunning=true;
-                    intake.setPower(1);
-                }
-            }
-
-            if (gamepad1.b) {
-                intakeServoRight.setPower(1);
-                intakeServoLeft.setPower(1);
-            }
-            if (gamepad1.x) {
-                intakeServoRight.setPower(-1);
-                intakeServoLeft.setPower(-1);
-            }
-            if (gamepad1.y) {
-                intakeServoRight.setPower(0);
-                intakeServoLeft.setPower(0);
-            }
-
-            telemetry.addData("Runtime", runTime.seconds());
+        if (shootR == null) {
+            telemetry.addLine("shootR is null");
             telemetry.update();
         }
+
+
+
+        if (intake == null) {
+            telemetry.addLine("intake is null");
+            telemetry.update();
+        }
+        
+    }
+
+    public void setUpIntake() {
+        intake.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+
+        telemetry.addLine("deadwheels done");
+        telemetry.update();
+    }
+
+    public void setUpShoot() {
+        shootR = (DcMotorEx) hardwareMap.dcMotor.get("shootR");
+        shootL = (DcMotorEx) hardwareMap.dcMotor.get("shootL");
+        shootR.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        shootL.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        
+        shootR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        shootL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        
+    }
+
+    public void setUpServos() {
+        arm = hardwareMap.servo.get("arm");
+        arm.setPosition(1);
+
+        hook = hardwareMap.servo.get("hook");
+        hook.setPosition(1);
+    }
+
+    @Override
+    //what runs in between robot being initialized and before it plays
+    public void init_loop() {
+
+    }
+
+    //once driver hits play
+    @Override
+    public void start() {
+        runtime.reset();
+    }
+
+
+    @Override
+    public void loop() {
+        telemetry.update();
+
+        //useEncoders();
+        driveBot();
+        intake();
+        //moveSlides();
+//        gripBlock();
+//        gripPlatform();
+//        autoGripBlock();
+//        deployCapstone();
+        useEncoders();
+        //launchStaff();
+
+//        bringDownLiftAutomated();
+
+//        useOneGamepad();
+    }
+
+    public void useEncoders() {
+        double parallelLeftTicks = (shootL.getCurrentPosition() - baseParallelLeftPosition);
+        double parallelRightTicks = shootR.getCurrentPosition() - baseParallelRightPosition;
+        double perpendicularTicks = intake.getCurrentPosition() - basePerpendicularPosition;
+
+        positionTracker.updateTicks(parallelLeftTicks, parallelRightTicks, perpendicularTicks);
+
+        if(Math.abs(gamepad1.left_stick_x) < Math.cos(Math.toRadians(5)) || Math.sqrt(Math.pow(gamepad1.left_stick_x,2) + Math.pow(gamepad1.left_stick_y,2)) < .1 ) {
+            positionTracker.updateLocationAndPose(telemetry, "");
+        }
+        else {
+            positionTracker.updateLocationAndPose(telemetry, "");
+        }
+
+        telemetry.addData("parallel left ticks", parallelLeftTicks);
+        telemetry.addData("parallel right ticks", parallelRightTicks);
+        telemetry.addData("perpendicular ticks", perpendicularTicks);
+        telemetry.addData("Distance traveled", (parallelLeftTicks + parallelRightTicks)*DEADWHEEL_INCHES_OVER_TICKS/2);
+        telemetry.addData("X Position", positionTracker.getCurrentX());
+        telemetry.addData("Y Position", positionTracker.getCurrentY());
+        telemetry.update();
+    }
+
+    public void driveBot() {
+        if ((gamepad1.a && !precisionChanged && !useOneGamepad) || (useOneGamepad && gamepad1.y)) {
+            precision = !precision;
+            precisionChanged = true;
+        }
+        else if ((!useOneGamepad && !gamepad1.a) || (useOneGamepad && !gamepad1.y)) {
+            precisionChanged = false;
+        }
+
+//        if (gamepad1.x && !directionChanged && !useOneGamepad) {
+//            direction = !direction;
+//            directionChanged = true;
+//        }
+//        else if (!gamepad1.x && !useOneGamepad) {
+//            directionChanged = false;
+//        }
+
+        double xMagnitude = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
+        double xLinear = direction ? xMagnitude : -xMagnitude;
+
+        double joystickAngle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) + 3*Math.PI/4;
+        double xTurn = gamepad1.right_stick_x;
+
+
+        double leftFrontPower = xLinear*Math.sin(joystickAngle) - xTurn;
+        double rightFrontPower = xLinear*Math.cos(joystickAngle) + xTurn;
+        double leftBackPower = xLinear*Math.cos(joystickAngle) - xTurn;
+        double rightBackPower = xLinear*Math.sin(joystickAngle) + xTurn;
+
+        double[] motorPowers = new double[]{leftFrontPower, rightFrontPower, leftBackPower, rightBackPower};
+        motorPowers = convertMotorPowers(motorPowers, xLinear, xTurn);
+
+        leftFront.setPower(precision ? 0.4 * motorPowers[0] : motorPowers[0]);
+        rightFront.setPower(precision ? 0.4 * motorPowers[1] : motorPowers[1]);
+        leftRear.setPower(precision ? 0.4 * motorPowers[2] : motorPowers[2]);
+        rightRear.setPower(precision ? 0.4 * motorPowers[3] : motorPowers[3]);
+
+//        telemetry.addData("Front Motors", "Left Front (%.2f), Right Front (%.2f)", leftFront.getPower(), rightFront.getPower());
+//        telemetry.addData("joystickAngle", joystickAngle);
+//        telemetry.addData("Rear Motors", "Left Rear (%.2f), Right Rear (%.2f)", leftBack.getPower(), rightBack.getPower());
+    }
+
+    public double[] convertMotorPowers(double[] motorPowers, double xLinear, double xTurn) {
+        double maxPower = getMaxMagnitude(motorPowers);
+
+        double conversion = Math.abs(Math.sqrt((Math.pow(xLinear,2) + Math.pow(xTurn, 2))/*/2*/)/maxPower);
+
+//        telemetry.addData("maxPower", maxPower);
+//        telemetry.addData("conversion", conversion);
+//        telemetry.update();
+
+        for (int i = 0; i < motorPowers.length; i++) {
+            motorPowers[i] *= conversion;
+        }
+
+        return motorPowers;
+    }
+
+    public double getMaxMagnitude(double[] arr) {
+        double max = Math.abs(arr[0]);
+
+        for (int i = 1; i < arr.length; i++) {
+            if (Math.abs(arr[i]) > max) {
+                max = arr[i];
+            }
+        }
+
+        return max;
+    }
+
+    public void intake() {
+        if (gamepad1.right_bumper) {
+            intake.setPower(1);
+        }
+        else if (gamepad1.left_bumper) {
+            intake.setPower(-1);
+        }
+        else {
+            intake.setPower(0);
+        }
+    }
+
+
+
+    public void gripWoble() {
+        if (gamepad1.b ) {
+            hook.setPosition(closed ? 1 : 0.1);
+            closed = !closed;
+            positionChanged = true;
+        }
+        else if ((!useOneGamepad && !gamepad2.b) || (useOneGamepad && !gamepad1.b)) {
+            positionChanged = false;
+        }
+    }
+
+    public void lowerArm() {
+        if (gamepad1.a ) {
+            arm.setPosition(closed ? 1 : 0.1);
+            down = !down;
+            positionChanged = true;
+        }
+        else if ((!useOneGamepad && !gamepad2.b) || (useOneGamepad && !gamepad1.b)) {
+            positionChanged = false;
+        }
+    }
+
+
+    public void useOneGamepad() {
+        if ((gamepad1.right_bumper && gamepad1.left_bumper && gamepad1.left_trigger == 1 && gamepad1.right_trigger == 1) || (gamepad2.right_bumper && gamepad2.left_bumper && gamepad2.left_trigger == 1 && gamepad2.right_trigger == 1)) {
+            useOneGamepad = !useOneGamepad;
+        }
+    }
+
+    /*public void launchStaff() {
+        if((!useOneGamepad && gamepad1.y && gamepad1.b) || (useOneGamepad && gamepad1.x && gamepad1.y)) {
+            staffServo.setPosition(-1);
+        }
+    }*/
+
+    public void dropWobble(){
+        arm.setPosition(0);
+        hook.setPosition(0);
+        arm.setPosition(1);
+    }
+
+    public void turnOnShooter(double power){
+        shootL.setPower(power);
+        shootL.setPower(power);
+    }
+
+    public void turnOnIntake(double power)
+    {
+        intake.setPower(1);
+    }
+
+
+
+    @Override
+    public void stop() {
 
     }
 }

@@ -1,12 +1,14 @@
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.testing;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.*;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.Spline;
 
 @Autonomous(name = "spline testing")
+@Disabled
 public class    splineTest extends Auto {
 
     private ElapsedTime runtime =new ElapsedTime();

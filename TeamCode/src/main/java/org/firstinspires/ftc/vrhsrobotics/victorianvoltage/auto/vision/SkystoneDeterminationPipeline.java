@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.vuforia;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.vision;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -28,7 +28,7 @@ public class SkystoneDeterminationPipeline  extends OpenCvPipeline {
     /*
      * The core values which define the location and size of the sample regions
      */
-    static final Point REGION1_TOPLEFT_ANCHOR_POINT = new Point(140,235);
+    static final Point REGION1_TOPLEFT_ANCHOR_POINT = new Point(78,50);
 
     static final int REGION_WIDTH = 35;
     static final int REGION_HEIGHT = 25;
@@ -52,7 +52,7 @@ public class SkystoneDeterminationPipeline  extends OpenCvPipeline {
     int avg1;
 
     // Volatile since accessed by OpMode thread w/o synchronization
-    private volatile RingPosition position = RingPosition.FOUR;
+    public volatile RingPosition position = RingPosition.FOUR;
 
     /*
      * This function takes the RGB frame, converts to YCrCb,
@@ -113,5 +113,7 @@ public class SkystoneDeterminationPipeline  extends OpenCvPipeline {
     {
         return avg1;
     }
+
+
 
 }

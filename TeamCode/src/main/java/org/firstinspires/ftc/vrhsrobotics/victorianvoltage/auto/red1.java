@@ -3,7 +3,7 @@ package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.vuforia.SkystoneDeterminationPipeline;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.vision.SkystoneDeterminationPipeline;
 
 
 @Autonomous(name = "redWall")
@@ -17,14 +17,14 @@ public class red1 extends Auto {
         waitForStart();
         runtime.reset();
         try {
+            telemetry.addData("Analysis", pipeline.getAnalysis());
+            telemetry.addData("Position", pipeline.position);
+            telemetry.update();
             SkystoneDeterminationPipeline.RingPosition location = pipeline.getPosition();
-
+            close();
             //TODO: this will be were the scan method stuff will go, location 0 = a, 1 =b, 4 = c,
             //todo so if that happens will be after the shooter method
-//            moveByDeadWheels(10, 0.7, 0, runtime);
-//            strafeByDeadWheels(8,0.7,false,0,runtime);
-////            turningPID(20, 0.5, runtime);
-//            sleep(1000);
+            strafeByDeadWheels(2, 0.7, false, 0, runtime);
 //            strafeByDeadWheels(20,0.7,true,0,runtime);
 //            moveByDeadWheels(33, 0.7, 0, runtime);
 //            strafeByDeadWheels(19,0.7,false,0,runtime);
@@ -41,29 +41,40 @@ public class red1 extends Auto {
                     System.out.println("b");
                     telemetry.addLine("b");
                     telemetry.update();
-                    turningPID(180, 0.4, runtime);
-                    moveByDeadWheels(18, -0.7, 0, runtime);
+                    moveByDeadWheels(80,  0.7, 0, runtime);
+                    strafeByDeadWheels(36,0.7,true,0,runtime);
+//                    turningPID(180, 0.4, runtime);
+                    dropWobble();
                     break;
                 case FOUR:
                     System.out.println("c");
                     telemetry.addLine("c");
                     telemetry.update();
-                    moveByDeadWheels(48, 0.7, 0, runtime);
+                    moveByDeadWheels(130, 0.7, 0, runtime);
+                    strafeByDeadWheels(12,0.7,true,0,runtime);
+                    dropWobble();
                     break;
                 default:
                     // TODO: 9/29/20 add spline movement there
                     System.out.println("a");
                     telemetry.addLine("a");
                     telemetry.update();
-                    moveByDeadWheels(24,0.7,0,runtime);
+                    moveByDeadWheels(55, 0.7, 0, runtime);
+                    strafeByDeadWheels(12,0.7,true,0,runtime);
+                    dropWobble();
                     break;
                 //todo: will be what is in 0. So might remove it.
             }
-            telemetry.addData("object",location);
+            telemetry.addData("object", location);
 
         } catch (Exception e) {
+            halt();
+            turnOffIntake();
+            turnOffShooter();
+            close();
             telemetry.addLine(e.getStackTrace().toString());
             telemetry.update();
+
         }
     }
 }

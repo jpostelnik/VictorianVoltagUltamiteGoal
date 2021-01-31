@@ -6,7 +6,6 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.util.ReadWriteFile;
@@ -20,7 +19,7 @@ import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.basicMathCa
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.KalminFilter;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.PIDController;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.Spline;
-import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.vuforia.SkystoneDeterminationPipeline;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.vision.SkystoneDeterminationPipeline;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
@@ -49,8 +48,7 @@ public abstract class Auto extends LinearOpMode {
 
 
     private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, capMotor;
-    private Servo elevator, arm, hook;
-    private TouchSensor liftTouchBottom;
+    private Servo arm, hook;
 
     private BNO055IMU imu;
     private ElapsedTime runtime = new ElapsedTime();
@@ -59,9 +57,9 @@ public abstract class Auto extends LinearOpMode {
 
 
     //pids
-    private PIDController pid = new PIDController(runtime, 1.9, 0, 0.2);
+    private PIDController pid = new PIDController(runtime, 0.8, 0, 0.2);
     private PIDController pidTruning = new PIDController(runtime, 1, 0, 0);
-    private PIDController pidStrafe = new PIDController(runtime, 1, 0, 0);
+    private PIDController pidStrafe = new PIDController(runtime, 0.8, 0, 0);
     private PIDController pidDiagonal = new PIDController(runtime, 0.01, 0, 0);
 
     protected WebcamName weCam;
@@ -86,7 +84,7 @@ public abstract class Auto extends LinearOpMode {
 
 
     private void intSensors(){
-        liftTouchBottom = hardwareMap.touchSensor.get("liftTouchBottom");
+
     }
 
     /**
@@ -144,14 +142,11 @@ public abstract class Auto extends LinearOpMode {
      * inits servos
      */
     private void initServos() {
-        elevator = hardwareMap.servo.get("elevator");
-        elevator.setPosition(1);
-
         arm = hardwareMap.servo.get("arm");
-        arm.setPosition(0);
+        arm.setPosition(1);
 
         hook = hardwareMap.servo.get("hook");
-        hook.setPosition(1);
+        hook.setPosition(0);
     }
 
     protected void intCamera(){
@@ -171,11 +166,14 @@ public abstract class Auto extends LinearOpMode {
             @Override
             public void onOpened()
             {
-                camera.startStreaming(320,240, OpenCvCameraRotation.SIDEWAYS_LEFT);
+                camera.startStreaming(320,240,OpenCvCameraRotation.SIDEWAYS_RIGHT);
             }
         });
     }
 
+    public  void close(){
+        camera.closeCameraDevice();
+    }
     /**
      * use for init the gyro
      */
@@ -289,7 +287,7 @@ public abstract class Auto extends LinearOpMode {
     /**
      * stops the robot
      */
-    private void halt() {
+    protected void halt() {
         for (DcMotorEx motor : driveTrain) {
             motor.setPower(0);
         }
@@ -362,6 +360,14 @@ public abstract class Auto extends LinearOpMode {
         halt();
     }
 
+    /**
+     *
+     * @param distance
+     * @param power
+     * @param heading
+     * @param runtime
+     * @throws InterruptedException
+     */
     public void moveByDeadWheels(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
         pid.reset(runtime);
         resetDeadWheels();
@@ -378,7 +384,16 @@ public abstract class Auto extends LinearOpMode {
         halt();
     }
 
-    public void strafeByDeadWheels(double distance, double power, boolean right, int heading, ElapsedTime runtime) throws InterruptedException {
+    /**
+     *
+     * @param distance
+     * @param power
+     * @param right
+     * @param heading
+     * @param runtime
+     * @throws InterruptedException
+     */
+    public void strafeByDeadWheels(double distance, double power, boolean left, int heading, ElapsedTime runtime) throws InterruptedException {
         resetMotors();
         resetDeadWheels();
         pidStrafe.reset(runtime);
@@ -386,7 +401,7 @@ public abstract class Auto extends LinearOpMode {
 
         int ticks = basicMathCalls.getDeadWheelTicks(distance);
         String direction = "";
-        if (right) {
+        if (left) {
             leftRear.setPower(1 * power);
             leftFront.setPower(-1 * power);
             rightRear.setPower(-1 * power);
@@ -753,17 +768,7 @@ public abstract class Auto extends LinearOpMode {
      * @param time  how long i want the motors running for.
      * @throws InterruptedException
      */
-    public void shoot(double power, double time) throws InterruptedException {
-        time += runtime.time();
-        while (time > runtime.time()) {
-            shootR.setPower(power);
-            shootL.setPower(power);
-            heartbeat();
-        }
-        shootL.setPower(0);
-        shootR.setPower(0);
 
-    }
 
     /**
      * for printing dead wheels while testing stuff
@@ -880,6 +885,45 @@ public abstract class Auto extends LinearOpMode {
         String filename = "AdafruitIMUCalibration.json";
         File file = AppUtil.getInstance().getSettingsFile(filename);
         ReadWriteFile.writeFile(file, calibrationData.serialize());
+    }
+
+    public void dropWobble(){
+        arm.setPosition(0);
+        hook.setPosition(0);
+        arm.setPosition(1);
+    }
+
+    public void turnOnShooter(double power){
+        shootL.setPower(power);
+        shootL.setPower(power);
+    }
+
+    public void turnOnIntake(double power)
+    {
+        intake.setPower(power);
+    }
+
+    public void turnOffShooter(){
+        shootL.setPower(0);
+        shootL.setPower(0);
+    }
+
+    public void turnOffIntake()
+    {
+        intake.setPower(0);
+    }
+
+    public void shoot(double powerShooter, double powerIntake ) throws InterruptedException {
+       double startTime = runtime.time();
+            turnOnShooter(powerShooter);
+            sleep(2000);
+            turnOnIntake(powerIntake);
+
+            while (5+startTime>runtime.time()) {
+                heartbeat();
+            }
+            turnOffIntake();
+            turnOffShooter();
     }
 }
 
