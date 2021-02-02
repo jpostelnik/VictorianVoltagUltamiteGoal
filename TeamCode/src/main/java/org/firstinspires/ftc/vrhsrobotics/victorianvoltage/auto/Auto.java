@@ -15,10 +15,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.MotionProfiling.MotionProfiler;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.basicMathCalls;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.KalminFilter;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.PIDController;
-import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.Spline;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.*;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.vision.SkystoneDeterminationPipeline;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
@@ -26,9 +27,11 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 
 import java.io.File;
 
+import static org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.KalminFilter.getError;
+
 
 /*bsfd
-* test test test*/
+ * test test test*/
 
 
 /**
@@ -48,17 +51,19 @@ public abstract class Auto extends LinearOpMode {
 
 
     private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, capMotor;
-    private Servo arm, hook;
+    private Servo arm, hook, liftPlateLeft, liftPlateRight;
 
     private BNO055IMU imu;
     private ElapsedTime runtime = new ElapsedTime();
 
     private DcMotorEx[] driveTrain;
 
+    private MotionProfiler motionProfiler;
+
 
     //pids
     private PIDController pid = new PIDController(runtime, 0.8, 0, 0.2);
-    private PIDController pidTruning = new PIDController(runtime, 1, 0, 0);
+    private PIDController pidTurning = new PIDController(runtime, 1, 0, 0);
     private PIDController pidStrafe = new PIDController(runtime, 0.8, 0, 0);
     private PIDController pidDiagonal = new PIDController(runtime, 0.01, 0, 0);
 
@@ -78,12 +83,17 @@ public abstract class Auto extends LinearOpMode {
         }
     }
 
+    /**
+     *
+     */
     protected void restRuntime() {
         runtime.reset();
     }
 
-
-    private void intSensors(){
+    /**
+     *
+     */
+    private void intSensors() {
 
     }
 
@@ -124,7 +134,6 @@ public abstract class Auto extends LinearOpMode {
         }
 
 
-
         if (intake == null) {
             telemetry.addLine("intake is null");
             telemetry.update();
@@ -146,10 +155,19 @@ public abstract class Auto extends LinearOpMode {
         arm.setPosition(1);
 
         hook = hardwareMap.servo.get("hook");
-        hook.setPosition(0);
+        hook.setPosition(1);
+
+        liftPlateLeft = hardwareMap.servo.get("liftPlateLeft");
+        liftPlateLeft.setPosition(1);
+
+        liftPlateRight = hardwareMap.servo.get("liftPlateRight");
+        liftPlateRight.setPosition(0);
     }
 
-    protected void intCamera(){
+    /**
+     *
+     */
+    protected void intCamera() {
         weCam = hardwareMap.get(WebcamName.class, "Webcam 1");
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         camera = OpenCvCameraFactory.getInstance().createWebcam(weCam, cameraMonitorViewId);
@@ -161,19 +179,21 @@ public abstract class Auto extends LinearOpMode {
         // landscape orientation, though.
 //        camera.setViewportRenderingPolicy(OpenCvCamera.ViewportRenderingPolicy.OPTIMIZE_VIEW);
 
-        camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
-        {
+        camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
             @Override
-            public void onOpened()
-            {
-                camera.startStreaming(320,240,OpenCvCameraRotation.SIDEWAYS_RIGHT);
+            public void onOpened() {
+                camera.startStreaming(320, 240, OpenCvCameraRotation.SIDEWAYS_RIGHT);
             }
         });
     }
 
-    public  void close(){
+    /**
+     *
+     */
+    public void close() {
         camera.closeCameraDevice();
     }
+
     /**
      * use for init the gyro
      */
@@ -252,6 +272,9 @@ public abstract class Auto extends LinearOpMode {
 //        }
 //    }
 
+    /**
+     *
+     */
     protected void initialize() {
         initMotors();
         telemetry.addLine("motors int");
@@ -315,23 +338,24 @@ public abstract class Auto extends LinearOpMode {
 //    }
 
 
-    @Deprecated
     /**
      * @param distance distance in inches that the robot move
      * @param power    it is how fast the robot moves
      * @param heading  the target heading for the front of the robot
      * @throws InterruptedException if op mod is not running then it stops
+     *                              oof
      */
+    @Deprecated
     public void move(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
         resetMotors();
         pid.reset(runtime);
-        double deadWheelStart = -1*shootR.getCurrentPosition();
+        double deadWheelStart = -1 * shootR.getCurrentPosition();
         ;
         double currentPosition = leftRear.getCurrentPosition();
         int ticks = basicMathCalls.getTicksMotor(distance, "linear");
 //        int ticks = (int) (distance * LINEAR_TO_TICKS);
         telemetry.clear();
-        telemetry.addData("starting distance",deadWheelStart/DEAD_WHEEL_TO_TICKS);
+        telemetry.addData("starting distance", deadWheelStart / DEAD_WHEEL_TO_TICKS);
         telemetry.addData("ticks", ticks);
         telemetry.addData("starting position", currentPosition);
         telemetry.update();
@@ -345,15 +369,15 @@ public abstract class Auto extends LinearOpMode {
         {
             telemetry.clear();
             telemetry.addData("ticks left", ticks - (leftRear.getCurrentPosition()));
-            System.out.println("distance traveled "+(-1*shootR.getCurrentPosition()-deadWheelStart)/DEAD_WHEEL_TO_TICKS);
-            telemetry.addData("distance traveled", (shootR.getCurrentPosition()-deadWheelStart)/DEAD_WHEEL_TO_TICKS);
+            System.out.println("distance traveled " + (-1 * shootR.getCurrentPosition() - deadWheelStart) / DEAD_WHEEL_TO_TICKS);
+            telemetry.addData("distance traveled", (shootR.getCurrentPosition() - deadWheelStart) / DEAD_WHEEL_TO_TICKS);
             correction(heading, "strait", power, 1);
             heartbeat();
             telemetry.update();
 
         }
         telemetry.addData("ending position", leftRear.getCurrentPosition());
-        telemetry.addData("distance traveled", (-1*shootR.getCurrentPosition()-deadWheelStart)/DEAD_WHEEL_TO_TICKS);
+        telemetry.addData("distance traveled", (-1 * shootR.getCurrentPosition() - deadWheelStart) / DEAD_WHEEL_TO_TICKS);
         telemetry.update();
 
 
@@ -361,7 +385,6 @@ public abstract class Auto extends LinearOpMode {
     }
 
     /**
-     *
      * @param distance
      * @param power
      * @param heading
@@ -385,10 +408,9 @@ public abstract class Auto extends LinearOpMode {
     }
 
     /**
-     *
      * @param distance
      * @param power
-     * @param right
+     * @param left
      * @param heading
      * @param runtime
      * @throws InterruptedException
@@ -460,7 +482,7 @@ public abstract class Auto extends LinearOpMode {
             motor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         }
     }
-    @Deprecated
+
     /**
      * moves the robot in a lateral direction
      *
@@ -468,7 +490,9 @@ public abstract class Auto extends LinearOpMode {
      * @param power    the speed
      * @param right    direction
      * @throws InterruptedException
+     * @deprecated - use strafebyDeadwheels
      */
+    @Deprecated
     protected void strafe(double distance, double power, boolean right, int heading, ElapsedTime runtime) throws InterruptedException {
         resetMotors();
         pidStrafe.reset(runtime);
@@ -499,7 +523,7 @@ public abstract class Auto extends LinearOpMode {
         halt();
 
     }
-    @Deprecated
+
     /**
      * used for turning just by ticks
      *
@@ -508,6 +532,7 @@ public abstract class Auto extends LinearOpMode {
      * @param direction either "right" or "left"
      * @throws InterruptedException throws if heartbeat throws
      */
+    @Deprecated
     protected void turnTicks(double power, double degrees, String direction, ElapsedTime runtime) throws InterruptedException {
         resetMotors();
         pidStrafe.reset(runtime);
@@ -761,14 +786,6 @@ public abstract class Auto extends LinearOpMode {
 
     }
 
-    /**
-     * shoots my shot
-     *
-     * @param power power of the motors. can be tuned if shooting to high or low
-     * @param time  how long i want the motors running for.
-     * @throws InterruptedException
-     */
-
 
     /**
      * for printing dead wheels while testing stuff
@@ -790,16 +807,19 @@ public abstract class Auto extends LinearOpMode {
 
     }
 
-    public void printTicks(){
+    /**
+     *
+     */
+    public void printTicks() {
         telemetry.clear();
         telemetry.addData("forward right", shootR.getCurrentPosition() / DEAD_WHEEL_TO_TICKS);
-        telemetry.addData("forward Left",shootL.getCurrentPosition()/DEAD_WHEEL_TO_TICKS);
+        telemetry.addData("forward Left", shootL.getCurrentPosition() / DEAD_WHEEL_TO_TICKS);
         telemetry.addData("horizontal", intake.getCurrentPosition() / DEAD_WHEEL_TO_TICKS);
-        telemetry.addData("Right Front ticks",rightFront.getCurrentPosition()/LINEAR_TO_TICKS);
-        telemetry.addData("Left Front ticks",leftFront.getCurrentPosition()/LINEAR_TO_TICKS);
-        telemetry.addData("Right Rear ticks",rightRear.getCurrentPosition()/LINEAR_TO_TICKS);
-        telemetry.addData("Left Rear ticks",leftRear.getCurrentPosition()/LINEAR_TO_TICKS);
-        telemetry.addData("velocity",rightFront.getVelocity());
+        telemetry.addData("Right Front ticks", rightFront.getCurrentPosition() / LINEAR_TO_TICKS);
+        telemetry.addData("Left Front ticks", leftFront.getCurrentPosition() / LINEAR_TO_TICKS);
+        telemetry.addData("Right Rear ticks", rightRear.getCurrentPosition() / LINEAR_TO_TICKS);
+        telemetry.addData("Left Rear ticks", leftRear.getCurrentPosition() / LINEAR_TO_TICKS);
+        telemetry.addData("velocity", rightFront.getVelocity());
 
 
         telemetry.update();
@@ -874,6 +894,9 @@ public abstract class Auto extends LinearOpMode {
         halt();
     }
 
+    /**
+     *
+     */
     private void calibrateBnO055() {
         BNO055IMU.CalibrationData calibrationData = imu.readCalibrationData();
 
@@ -887,44 +910,221 @@ public abstract class Auto extends LinearOpMode {
         ReadWriteFile.writeFile(file, calibrationData.serialize());
     }
 
-    public void dropWobble(){
+    /**
+     *
+     */
+    public void dropWobble() {
         arm.setPosition(0);
+        sleep(750);
         hook.setPosition(0);
+        sleep(750);
         arm.setPosition(1);
+        sleep(250);
+        arm.setPosition(1);
+
     }
 
-    public void turnOnShooter(double power){
+    /**
+     *
+     */
+    public void turnOnShooter(double power) {
         shootL.setPower(power);
         shootL.setPower(power);
     }
 
-    public void turnOnIntake(double power)
-    {
+    /**
+     *
+     */
+    public void turnOnIntake(double power) {
         intake.setPower(power);
     }
 
-    public void turnOffShooter(){
+    /**
+     *
+     */
+    public void turnOffShooter() {
         shootL.setPower(0);
         shootL.setPower(0);
     }
 
-    public void turnOffIntake()
-    {
+    public void turnOffIntake() {
         intake.setPower(0);
     }
 
-    public void shoot(double powerShooter, double powerIntake ) throws InterruptedException {
-       double startTime = runtime.time();
-            turnOnShooter(powerShooter);
-            sleep(2000);
-            turnOnIntake(powerIntake);
+    /**
+     * shoots my shot
+     *
+     * @param powerIntake  intake speed
+     * @param powerShooter shooter speed
+     * @throws InterruptedException
+     */
+    public void shoot(double powerShooter, double powerIntake) throws InterruptedException {
+        double startTime = runtime.time();
+        turnOnShooter(powerShooter);
+        sleep(2000);
+        turnOnIntake(powerIntake);
 
-            while (5+startTime>runtime.time()) {
-                heartbeat();
-            }
-            turnOffIntake();
-            turnOffShooter();
+        while (5 + startTime > runtime.time()) {
+            heartbeat();
+        }
+        turnOffIntake();
+        turnOffShooter();
     }
+
+    /**
+     * @param xcoords
+     * @param ycoords
+     * @param maximumPower
+     * @param initPower
+     * @param finalPower
+     * @param offset
+     * @param halt
+     * @throws InterruptedException
+     */
+    public void splineMove(double[] xcoords, double[] ycoords, double maximumPower, double initPower, double finalPower, double offset, boolean halt) throws InterruptedException {
+        double baseParallelLeftTicks = shootL.getCurrentPosition();
+        double baseParallelRightTicks = -shootR.getCurrentPosition();
+
+        double parallelLeftTicks = 0;
+        double parallelRightTicks = 0;
+
+        double sRight = 0;
+        double sLeft = 0;
+        double sAvg = 0;
+
+        //double startingPosition = parallelEncoderTracker.getCurrentPosition();
+        Waypoint[] coords = new Waypoint[xcoords.length];
+        boolean inverted = false;
+
+        //set Waypoints per each (x,y)
+        for (int i = 0; i < coords.length; i++) {
+            coords[i] = new Waypoint(xcoords[i], ycoords[i]);
+        }
+
+        //if spline backwards, set inverted to true (lets correction method know to make adjustments to targetHeading in PD correction method)
+        if (maximumPower < 0) {
+            inverted = true;
+        }
+
+        //sets new spline, defines important characteristics
+        Bezier spline = new Bezier(coords);
+        double t = 0;
+        double distanceTraveled;
+        double arclength = spline.getArcLength(); //computes arc length by adding infinitesimally small slices of sqrt( (dx/dt)^2 + (dy/dt)^2 ) (distance formula). This method uses integration, a fundamental component in calculus
+
+        motionProfiler = new MotionProfiler(.125);
+        double currentPower = 0;
+
+        double time = runtime.time();
+
+        while (t <= 1.0 && runtime.time() - time < 7) {
+            heartbeat();
+
+            currentPower = motionProfiler.getProfilePower(t, maximumPower, initPower, finalPower);
+            //constantly adjusts heading based on what the current spline angle should be based on the calculated t
+//            correction(currentPower, (int) (Math.toDegrees(spline.getAngle(t, offset))), "spline", inverted, 1.0);
+            //distanceTraveled computed by converting encoderTraveled ticks on deadwheel to inches traveled
+            parallelLeftTicks = shootL.getCurrentPosition() - baseParallelLeftTicks;
+            parallelRightTicks = -shootR.getCurrentPosition() - baseParallelRightTicks;
+
+            sRight = (parallelRightTicks) * 1 / DEAD_WHEEL_TO_TICKS;
+            sLeft = (parallelLeftTicks) * 1 / DEAD_WHEEL_TO_TICKS;
+            sAvg = (sLeft + sRight) / 2;
+
+            distanceTraveled = sAvg;
+
+            //positionTracker.updateTicks(parallelLeftTicks, parallelRightTicks, perpendicularTicks);
+            //positionTracker.updateLocationAndPose(telemetry, "spline");
+
+            t = Math.abs(distanceTraveled / arclength);
+        }
+        if (halt) {
+            halt();
+        }
+    }
+
+
+    /**
+     * @param arr
+     * @return
+     */
+    public double getMaxMagnitude(double[] arr) {
+        double max = Math.abs(arr[0]);
+
+        for (int i = 1; i < arr.length; i++) {
+            if (Math.abs(arr[i]) > max) {
+                max = arr[i];
+            }
+        }
+
+        return max;
+    }
+
+    /**
+     * @param power
+     * @param targetHeading
+     * @param movementType
+     * @param inverted
+     * @param max
+     */
+    public void correction(double power, double targetHeading, String movementType, boolean inverted, double max) {
+        //sets target and current angles
+        double target = targetHeading;
+        double current = getCurrentAngle();
+
+        //if the spline motion is backwards, the target must be flipped 180 degrees in order to match with spline.getAngle()
+        if (inverted && movementType.contains("spline")) {
+            target = (targetHeading > 0) ? (targetHeading - 180) : (targetHeading + 180);
+        }
+
+        //when axis between -179 and 179 degrees is crossed, degrees must be converted from 0 - 360 degrees. 179-(-179) = 358. 179 - 181 = -2. Big difference
+        double error = getError(current, target);
+
+        //PD correction for both regular and spline motion
+        if (movementType.contains("straight") || movementType.contains("spline")) {
+            double correction = pid.correction(error, runtime);
+
+            double leftPower = Range.clip(power - correction, -max, max);
+            double rightPower = Range.clip(power + correction, -max, max);
+
+            leftFront.setPower(leftPower);
+            rightFront.setPower(rightPower);
+            leftRear.setPower(leftPower);
+            rightRear.setPower(rightPower);
+//            telemetry.addData("left expected power", leftPower);
+//            telemetry.addData("right expected power", rightPower);
+//            telemetry.addData("actual left power", leftFront.getPower());
+//            telemetry.addData("actual right power", rightFront.getPower());
+        }
+
+        //pd correction for strafe motion. Right and left are opposites
+        else if (movementType.contains("strafe")) {
+            double correction = pidStrafe.correction(error, runtime);
+
+            if (movementType.contains("left")) {
+                leftFront.setPower(Range.clip(-power - correction, -1.0, 1.0));
+                rightFront.setPower(Range.clip(power + correction, -1.0, 1.0));
+                leftRear.setPower(Range.clip(power - correction, -1.0, 1.0));
+                rightRear.setPower(Range.clip(-power + correction, -1.0, 1.0));
+            } else if (movementType.contains("right")) {
+                leftFront.setPower(Range.clip(power - correction, -1.0, 1.0));
+                rightFront.setPower(Range.clip(-power + correction, -1.0, 1.0));
+                leftRear.setPower(Range.clip(-power - correction, -1.0, 1.0));
+                rightRear.setPower(Range.clip(power + correction, -1.0, 1.0));
+            }
+        }
+
+//        telemetry.addData("current Angle", current);
+//        telemetry.addData("target", target);
+//        telemetry.addData("error", error);
+//        telemetry.addData("lf", leftFront.getPower());
+//        telemetry.addData("lb", leftBack.getPower());
+//        telemetry.addData("rf", rightFront.getPower());
+//        telemetry.addData("rb", rightBack.getPower());
+//        telemetry.addData("avg power", (rightBack.getPower() + rightFront.getPower() + leftBack.getPower() + leftFront.getPower()) / 4);
+//        telemetry.update();
+    }
+
 }
 
 

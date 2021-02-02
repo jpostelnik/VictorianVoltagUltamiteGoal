@@ -1,22 +1,23 @@
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline;
 
-public class Waypoint {
-    private double xCord, yCord;
+public class Waypoint
+{
+    private double xVal, yVal;
     public Waypoint(double x, double y)
     {
-        xCord = x;
-        yCord = y;
+        xVal = x;
+        yVal = y;
     }
     public double getXcoord()
     {
-        return xCord;
+        return xVal;
     }
     public double getYcoord()
     {
-        return yCord;
+        return yVal;
     }
     public String toString()
     {
-        return "x: " + xCord + ", y: " + yCord;
+        return "x: " + xVal + ", y: " + yVal;
     }
 }

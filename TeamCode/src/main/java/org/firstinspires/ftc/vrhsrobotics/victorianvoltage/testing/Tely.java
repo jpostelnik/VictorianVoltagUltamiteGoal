@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -13,19 +14,19 @@ import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.helper.PositionT
 public class Tely extends OpMode {
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, capMotor;
-    private Servo elevator, arm, hook;
+    private Servo arm, hook, liftPlateLeft, liftPlateRight;
     private boolean precision, direction, precisionChanged, directionChanged;
     private boolean useOneGamepad;
     private boolean positionChanged = false;
-    private boolean closed = false, down = false;
+    private boolean closed = false, down = false, shooting = false, lowered = false, grounded = false;
     private boolean deployerPositionChanged = false;
     private boolean deployerClosed = false;
     private double baseParallelRightPosition;
     private double baseParallelLeftPosition;
     private double basePerpendicularPosition;
     private final int deadWheelTicks = 4096;
-    private final double WHEEL_CIRCUMFERENCE_IN = Math.PI*3.05; //circumference of parallel deadwheel
-    private final double DEADWHEEL_INCHES_OVER_TICKS = WHEEL_CIRCUMFERENCE_IN/deadWheelTicks;
+    private final double WHEEL_CIRCUMFERENCE_IN = Math.PI * 3.05; //circumference of parallel deadwheel
+    private final double DEADWHEEL_INCHES_OVER_TICKS = WHEEL_CIRCUMFERENCE_IN / deadWheelTicks;
     private double time = -999;
     private PositionTracker positionTracker = new PositionTracker(0, 0, 0);
 
@@ -42,6 +43,7 @@ public class Tely extends OpMode {
         useOneGamepad = false;
         precisionChanged = false;
         directionChanged = false;
+        shooting = false;
 
         closed = false;
         positionChanged = false;
@@ -58,7 +60,7 @@ public class Tely extends OpMode {
         rightFront = (DcMotorEx) hardwareMap.dcMotor.get("rightFront");
         rightRear = (DcMotorEx) hardwareMap.dcMotor.get("rightRear");
         leftRear = (DcMotorEx) hardwareMap.dcMotor.get("leftRear");
-        
+
 
         leftFront.setDirection(DcMotor.Direction.REVERSE);
         leftRear.setDirection(DcMotor.Direction.REVERSE);
@@ -68,29 +70,12 @@ public class Tely extends OpMode {
         telemetry.addLine("drive train done");
         telemetry.update();
 
-        
-        intake = (DcMotorEx) hardwareMap.dcMotor.get("intake");
-
-        shootL.setDirection(DcMotor.Direction.REVERSE);
-        shootR.setDirection(DcMotor.Direction.REVERSE);
-
-        if (shootR == null) {
-            telemetry.addLine("shootR is null");
-            telemetry.update();
-        }
-
-
-
-        if (intake == null) {
-            telemetry.addLine("intake is null");
-            telemetry.update();
-        }
-        
     }
 
     public void setUpIntake() {
+        intake = (DcMotorEx) hardwareMap.dcMotor.get("intake");
         intake.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-
+        intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         telemetry.addLine("deadwheels done");
         telemetry.update();
     }
@@ -98,14 +83,16 @@ public class Tely extends OpMode {
     public void setUpShoot() {
         shootR = (DcMotorEx) hardwareMap.dcMotor.get("shootR");
         shootL = (DcMotorEx) hardwareMap.dcMotor.get("shootL");
+        shootR.setDirection(DcMotorSimple.Direction.REVERSE);
+        shootL.setDirection(DcMotorSimple.Direction.REVERSE);
         shootR.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         shootL.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        
+
         shootR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         shootL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        
+
     }
 
     public void setUpServos() {
@@ -114,6 +101,12 @@ public class Tely extends OpMode {
 
         hook = hardwareMap.servo.get("hook");
         hook.setPosition(1);
+
+        liftPlateLeft = hardwareMap.servo.get("liftPlateLeft");
+        liftPlateLeft.setPosition(0);
+
+        liftPlateRight = hardwareMap.servo.get("liftPlateRight");
+        liftPlateRight.setPosition(0);
     }
 
     @Override
@@ -132,21 +125,15 @@ public class Tely extends OpMode {
     @Override
     public void loop() {
         telemetry.update();
-
-        //useEncoders();
         driveBot();
         intake();
-        //moveSlides();
-//        gripBlock();
-//        gripPlatform();
-//        autoGripBlock();
-//        deployCapstone();
+        shoot();
+        gripWobble();
+        moveArm();
+        lowerPlate();
         useEncoders();
-        //launchStaff();
 
-//        bringDownLiftAutomated();
 
-//        useOneGamepad();
     }
 
     public void useEncoders() {
@@ -156,17 +143,16 @@ public class Tely extends OpMode {
 
         positionTracker.updateTicks(parallelLeftTicks, parallelRightTicks, perpendicularTicks);
 
-        if(Math.abs(gamepad1.left_stick_x) < Math.cos(Math.toRadians(5)) || Math.sqrt(Math.pow(gamepad1.left_stick_x,2) + Math.pow(gamepad1.left_stick_y,2)) < .1 ) {
+        if (Math.abs(gamepad1.left_stick_x) < Math.cos(Math.toRadians(5)) || Math.sqrt(Math.pow(gamepad1.left_stick_x, 2) + Math.pow(gamepad1.left_stick_y, 2)) < .1) {
             positionTracker.updateLocationAndPose(telemetry, "");
-        }
-        else {
+        } else {
             positionTracker.updateLocationAndPose(telemetry, "");
         }
 
         telemetry.addData("parallel left ticks", parallelLeftTicks);
         telemetry.addData("parallel right ticks", parallelRightTicks);
         telemetry.addData("perpendicular ticks", perpendicularTicks);
-        telemetry.addData("Distance traveled", (parallelLeftTicks + parallelRightTicks)*DEADWHEEL_INCHES_OVER_TICKS/2);
+        telemetry.addData("Distance traveled", (parallelLeftTicks + parallelRightTicks) * DEADWHEEL_INCHES_OVER_TICKS / 2);
         telemetry.addData("X Position", positionTracker.getCurrentX());
         telemetry.addData("Y Position", positionTracker.getCurrentY());
         telemetry.update();
@@ -176,8 +162,7 @@ public class Tely extends OpMode {
         if ((gamepad1.a && !precisionChanged && !useOneGamepad) || (useOneGamepad && gamepad1.y)) {
             precision = !precision;
             precisionChanged = true;
-        }
-        else if ((!useOneGamepad && !gamepad1.a) || (useOneGamepad && !gamepad1.y)) {
+        } else if ((!useOneGamepad && !gamepad1.a) || (useOneGamepad && !gamepad1.y)) {
             precisionChanged = false;
         }
 
@@ -192,14 +177,14 @@ public class Tely extends OpMode {
         double xMagnitude = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
         double xLinear = direction ? xMagnitude : -xMagnitude;
 
-        double joystickAngle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) + 3*Math.PI/4;
+        double joystickAngle = Math.atan2(gamepad1.left_stick_y, gamepad1.left_stick_x) + 3 * Math.PI / 4;
         double xTurn = gamepad1.right_stick_x;
 
 
-        double leftFrontPower = xLinear*Math.sin(joystickAngle) - xTurn;
-        double rightFrontPower = xLinear*Math.cos(joystickAngle) + xTurn;
-        double leftBackPower = xLinear*Math.cos(joystickAngle) - xTurn;
-        double rightBackPower = xLinear*Math.sin(joystickAngle) + xTurn;
+        double leftFrontPower = xLinear * Math.sin(joystickAngle) - xTurn;
+        double rightFrontPower = xLinear * Math.cos(joystickAngle) + xTurn;
+        double leftBackPower = xLinear * Math.cos(joystickAngle) - xTurn;
+        double rightBackPower = xLinear * Math.sin(joystickAngle) + xTurn;
 
         double[] motorPowers = new double[]{leftFrontPower, rightFrontPower, leftBackPower, rightBackPower};
         motorPowers = convertMotorPowers(motorPowers, xLinear, xTurn);
@@ -217,7 +202,7 @@ public class Tely extends OpMode {
     public double[] convertMotorPowers(double[] motorPowers, double xLinear, double xTurn) {
         double maxPower = getMaxMagnitude(motorPowers);
 
-        double conversion = Math.abs(Math.sqrt((Math.pow(xLinear,2) + Math.pow(xTurn, 2))/*/2*/)/maxPower);
+        double conversion = Math.abs(Math.sqrt((Math.pow(xLinear, 2) + Math.pow(xTurn, 2))/*/2*/) / maxPower);
 
 //        telemetry.addData("maxPower", maxPower);
 //        telemetry.addData("conversion", conversion);
@@ -245,35 +230,51 @@ public class Tely extends OpMode {
     public void intake() {
         if (gamepad1.right_bumper) {
             intake.setPower(1);
-        }
-        else if (gamepad1.left_bumper) {
+        } else if (gamepad1.left_bumper) {
             intake.setPower(-1);
-        }
-        else {
+        } else {
             intake.setPower(0);
         }
     }
 
 
-
-    public void gripWoble() {
-        if (gamepad1.b ) {
+    public void gripWobble() {
+        if (gamepad1.dpad_down) {
             hook.setPosition(closed ? 1 : 0.1);
             closed = !closed;
-            positionChanged = true;
-        }
-        else if ((!useOneGamepad && !gamepad2.b) || (useOneGamepad && !gamepad1.b)) {
+        } else if ((!useOneGamepad && !gamepad2.b) || (useOneGamepad && !gamepad1.b)) {
             positionChanged = false;
         }
     }
 
-    public void lowerArm() {
-        if (gamepad1.a ) {
-            arm.setPosition(closed ? 1 : 0.1);
-            down = !down;
-            positionChanged = true;
+    public void moveArm() {
+        if (gamepad1.dpad_up) {
+            arm.setPosition(lowered ? 1 : 0.1);
+            lowered = !lowered;
+        } else if ((!useOneGamepad && !gamepad2.b) || (useOneGamepad && !gamepad1.b)) {
+            positionChanged = false;
         }
-        else if ((!useOneGamepad && !gamepad2.b) || (useOneGamepad && !gamepad1.b)) {
+    }
+
+    public void
+    shoot() {
+        if (gamepad1.a) {
+            shootR.setPower(shooting ? 0.3 : 0);
+            shootL.setPower(shooting ? 0.3 : 0);
+            shooting = !shooting;
+        } else if ((!useOneGamepad && !gamepad2.b) || (useOneGamepad && !gamepad1.b)) {
+            positionChanged = false;
+        }
+    }
+
+    public void lowerPlate() {
+        if (gamepad1.y) {
+            liftPlateLeft.setPosition(grounded ? 1 : 0);
+            liftPlateRight.setPosition(grounded ? 0 : 1);
+
+            grounded = !grounded;
+            positionChanged = true;
+        } else if ((!useOneGamepad && !gamepad2.b) || (useOneGamepad && !gamepad1.b)) {
             positionChanged = false;
         }
     }
@@ -284,29 +285,6 @@ public class Tely extends OpMode {
             useOneGamepad = !useOneGamepad;
         }
     }
-
-    /*public void launchStaff() {
-        if((!useOneGamepad && gamepad1.y && gamepad1.b) || (useOneGamepad && gamepad1.x && gamepad1.y)) {
-            staffServo.setPosition(-1);
-        }
-    }*/
-
-    public void dropWobble(){
-        arm.setPosition(0);
-        hook.setPosition(0);
-        arm.setPosition(1);
-    }
-
-    public void turnOnShooter(double power){
-        shootL.setPower(power);
-        shootL.setPower(power);
-    }
-
-    public void turnOnIntake(double power)
-    {
-        intake.setPower(1);
-    }
-
 
 
     @Override
