@@ -35,7 +35,7 @@ public class red1 extends Auto {
 ////            shoot(1, 1);
 //            // turningPID(-15,1,runtime);
 
-            location = SkystoneDeterminationPipeline.RingPosition.ONE;
+//            location = SkystoneDeterminationPipeline.RingPosition.ONE;
 //
             switch (location) {
                 case ONE:
@@ -45,8 +45,11 @@ public class red1 extends Auto {
                     strafeByDeadWheels(2, 0.7, false, 0, runtime);
                     moveByDeadWheels(86, 0.7, 0, runtime);
                     strafeByDeadWheels(30, 0.4, true, 0, runtime);
+
 //                    turningPID(180, 0.4, runtime);
                     dropWobble();
+                    moveByDeadWheels(5, -0.7, 0, runtime);
+
                     break;
                 case FOUR:
                     System.out.println("c");
@@ -59,7 +62,7 @@ public class red1 extends Auto {
                     dropWobble();
 
                     strafeByDeadWheels(6, 0.4, true, 0, runtime);
-                    moveByDeadWheels(50,-0.7,0,runtime);
+                    moveByDeadWheels(43,-0.7,0,runtime);
                     break;
                 default:
                     // TODO: 9/29/20 add spline movement there
@@ -67,7 +70,7 @@ public class red1 extends Auto {
                     telemetry.addLine("a");
                     telemetry.update();
                     moveByDeadWheels(63, 0.7, 0, runtime);
-                    strafeByDeadWheels(6, 0.4, true, 0, runtime);
+//                    strafeByDeadWheels(6, 0.4, true, 0, runtime);
                     dropWobble();
                     break;
                 //todo: will be what is in 0. So might remove it.
