@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory;
 
-public class KalminFilter {
+public class RobotKalmanFilter {
 
     private final double TICKS_PER_REV = 560;
     private final double DRIVETRAIN_WHEEL_DIAMTER = 4;
@@ -45,6 +45,27 @@ public class KalminFilter {
 
         return distance*DEAD_WHEEL_TO_TICKS;
     }
+
+    public double kalmanFilter(){
+        double xHat, yHat, xActual,yActual,xPerdition, yPerdition;
+        double xHatVelocity, yHatVelocity, xVelocity, yVelocity;
+
+
+
+
+        double distantTraveled =0;
+
+
+        return distantTraveled;
+    }
+
+
+    public  void prediction(){
+
+
+
+    }
+
 
 
 }

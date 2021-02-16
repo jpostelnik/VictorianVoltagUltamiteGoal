@@ -4,7 +4,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class KalmanFilterTest {
+public class RobotRobotKalmanFilterTest {
 
     @Test
     public void initialize() {

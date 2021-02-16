@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.util.ReadWriteFile;
 
+import org.ejml.simple.SimpleMatrix;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -17,9 +18,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.MotionProfiling.MotionProfiler;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.basicMathCalls;
-import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.KalminFilter;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.KalmanFilter;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.PIDController;
-import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.*;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.RobotKalmanFilter;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.Bezier;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.Spline;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.Waypoint;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.vision.SkystoneDeterminationPipeline;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
@@ -27,7 +31,7 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 
 import java.io.File;
 
-import static org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.KalminFilter.getError;
+import static org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.RobotKalmanFilter.*;
 
 
 /*bsfd
@@ -66,10 +70,47 @@ public abstract class Auto extends LinearOpMode {
     private PIDController pidTurning = new PIDController(runtime, 1, 0, 0);
     private PIDController pidStrafe = new PIDController(runtime, 0.8, 0, 0);
     private PIDController pidDiagonal = new PIDController(runtime, 0.01, 0, 0);
+    private PIDController pidPositional = new PIDController(runtime, 0.7, 0.1, 0);
 
     protected WebcamName weCam;
     protected OpenCvCamera camera;
     protected SkystoneDeterminationPipeline pipeline;
+
+    //KalmanFilter Filter
+    // 10 updates per second
+    double dt = 1.0 / 10;
+    SimpleMatrix f = new SimpleMatrix(new double[][]{
+            {1, 0, dt, 0},
+            {0, 1, 0, dt},
+            {0, 0, 1, 0},
+            {0, 0, 0, 1}
+    }
+    );
+
+
+    SimpleMatrix G = new SimpleMatrix(new double[][]{
+            {0.5 * Math.pow(dt, 2)},
+            {0.5 * Math.pow(dt, 2)},
+            {dt},
+            {dt}
+    });
+
+    double sigma_a = 1;
+    SimpleMatrix Q = G.mult(G.transpose()).scale(sigma_a * sigma_a);
+
+    SimpleMatrix H = SimpleMatrix.identity(f.numRows());
+
+    double positionVar = 0.5;
+    double velocityVar = 0.1;
+
+    SimpleMatrix R = new SimpleMatrix(new double[][]{
+            {positionVar, 0, 0, 0},
+            {0, positionVar, 0, 0},
+            {0, 0, velocityVar, 0},
+            {0, 0, 0, velocityVar}
+    });
+
+    KalmanFilter robotKalmanFilter = new KalmanFilter(f, G, R, Q, H);
 
 
     /**
@@ -210,68 +251,6 @@ public abstract class Auto extends LinearOpMode {
     }
 
 
-//    private static final String VUFORIA_KEY =
-//            "AXmG74D/////AAABmcbI+OuRcECkskgZxnebQ4aCvV3y4ZxNNMqL/ii0UTZ4LvJzrZXQ/Tmpjus37PyY6Qgy2esiZm1gCbpD08BG3bplvN1aDfRWlrXuhnwbsXfRT1WoJlg41K1j3jEY3+JMn3nQ0dFslzFDomXDRe9PUpuEPyZpR2uCkmWT26JOIfImG0kkdgTmYnxiuVCwE5k4qfYGZq0qxx6q5OowqkB/WLcMB9lGD5b88oGOMDXoil0JI4pZcVam4fdERnd490N9pX7mzdXYfDPntu+uYKZu9kNHbU6rqrnJJfzX3C0WXa1qF2e3zJCyR5ckciG/I4fSZgISyPwmMPO3+ss0NcboYEnPQvsG8Onwu30/Qq42B5/O";
-//
-//
-//    /**
-//     * {@link #vuforia} is the variable we will use to store our instance of the Vuforia
-//     * localization engine.
-//     */
-//    private VuforiaLocalizer vuforia;
-//
-//    /**
-//     * {@link #tfod} is the variable we will use to store our instance of the TensorFlow Object
-//     * Detection engine.
-//     */
-//    private TFObjectDetector tfod;
-//
-//    /**
-//     *
-//     */
-//    private void initVuforia() {
-//        /*
-//         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
-//         */
-//        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
-//
-//        parameters.vuforiaLicenseKey = VUFORIA_KEY;
-//        parameters.cameraName = hardwareMap.get(WebcamName.class, "Webcam 1");
-//
-//        //  Instantiate the Vuforia engine
-//        vuforia = ClassFactory.getInstance().createVuforia(parameters);
-//
-//        // Loading trackables is not necessary for the TensorFlow Object Detection engine.
-//    }
-//
-//    private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
-//    private static final String LABEL_FIRST_ELEMENT = "Quad";
-//    private static final String LABEL_SECOND_ELEMENT = "Single";
-//
-//    /**
-//     * Initialize the TensorFlow Object Detection engine.
-//     */
-//    private void initTfod() {
-//        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
-//                "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-//        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
-//        tfodParameters.minResultConfidence = 0.8f;
-//        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
-//        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
-//    }
-//
-//    /**
-//     * this initialize every motor, servo, and sensor
-//     */
-//
-//    protected void initVision() {
-//        initVuforia();
-//        initTfod();
-//        if (tfod != null) {
-//            tfod.activate();
-//        }
-//    }
-
     /**
      *
      */
@@ -291,8 +270,11 @@ public abstract class Auto extends LinearOpMode {
         telemetry.update();
         intSensors();
         telemetry.addLine("sensors int");
+
+
         telemetry.addLine("all init");
         telemetry.update();
+
 
     }
 
@@ -393,15 +375,51 @@ public abstract class Auto extends LinearOpMode {
      */
     public void moveByDeadWheels(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
         pid.reset(runtime);
+//        robotKalmanFilter.setInitalPostion();
         resetDeadWheels();
         double currentPosition = shootR.getCurrentPosition();
         int ticks = basicMathCalls.getDeadWheelTicks(distance);
         for (DcMotorEx motors : driveTrain) {
             motors.setPower(power);
         }
-        while (Math.abs(shootR.getCurrentPosition() - currentPosition) < ticks) ;
-        {
-            correction(heading, "strait", power, 1);
+        double position = 0;
+        SimpleMatrix positionVector = new SimpleMatrix(new double[][]{
+                {0},
+                {0}
+        });
+        SimpleMatrix targetVector = new SimpleMatrix(new double[][]{
+                {ticks},
+                {0}
+        });
+        double errorMagnitude =1000000;
+        while (errorMagnitude < 1) {
+            position = (shootR.getCurrentPosition() + shootL.getCurrentPosition()) / 2;
+            robotKalmanFilter.update(new SimpleMatrix(new double[][]{
+                    {position},
+                    {intake.getCurrentPosition()},
+                    {leftRear.getVelocity()},
+                    {0}
+            }));
+            SimpleMatrix currentPositionVector = new SimpleMatrix(new double[][]{
+                    {robotKalmanFilter.getXPosition()},
+                    {robotKalmanFilter.getYPosition()}
+            });
+
+            SimpleMatrix errorVector = targetVector.minus(currentPosition);
+            errorMagnitude = Math.sqrt(Math.pow(errorVector.get(0, 0), 2) + Math.pow(errorVector.get(0, 0), 2));
+            double correction = pidPositional.correction(errorMagnitude, runtime);
+
+            if (correction > 4000) {
+//                correction(heading, "strait", power, 1);
+                correction(power, heading, "strait", false, 1);
+
+            } else {
+                power *= correction / 4000;
+//                correction(heading, "strait", power, 1);
+                correction(power, heading, "strait", false, 1);
+
+            }
+            positionVector = currentPositionVector;
             heartbeat();
         }
         halt();
@@ -577,7 +595,7 @@ public abstract class Auto extends LinearOpMode {
 
         do {
             double current = getCurrentAngle();
-            error = KalminFilter.getError(current, target);
+            error = getError(current, target);
 
             double correction = pid.correction(error, runtime);
 
@@ -685,7 +703,7 @@ public abstract class Auto extends LinearOpMode {
         double current = getCurrentAngle();
 
         telemetry.clear();
-        double error = KalminFilter.getError(current, target);
+        double error = RobotKalmanFilter.getError(current, target);
         telemetry.addData("error: ", error);
         telemetry.update();
 
@@ -763,7 +781,7 @@ public abstract class Auto extends LinearOpMode {
                             boolean inv) {
 
         double current = getCurrentAngle();
-        double error = KalminFilter.getError(current, targetHeading);
+        double error = RobotKalmanFilter.getError(current, targetHeading);
 
         double correction = pidDiagonal.correction(error, runtime);
 
@@ -1079,6 +1097,7 @@ public abstract class Auto extends LinearOpMode {
 
         //when axis between -179 and 179 degrees is crossed, degrees must be converted from 0 - 360 degrees. 179-(-179) = 358. 179 - 181 = -2. Big difference
         double error = getError(current, target);
+
 
         //PD correction for both regular and spline motion
         if (movementType.contains("straight") || movementType.contains("spline")) {
