@@ -62,7 +62,7 @@ public class red1 extends Auto {
                     dropWobble();
 
                     strafeByDeadWheels(6, 0.4, true, 0, runtime);
-                    moveByDeadWheels(43,-0.7,0,runtime);
+                    moveByDeadWheels(43, -0.7, 0, runtime);
                     break;
                 default:
                     // TODO: 9/29/20 add spline movement there

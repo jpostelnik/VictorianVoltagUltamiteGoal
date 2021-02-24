@@ -258,15 +258,14 @@ public class Tely extends OpMode {
 
     public void
     shoot() {
-        if (gamepad1.left_trigger>0.8) {
+        if (gamepad1.left_trigger > 0.8) {
             shootR.setPower(0.8);
             shootL.setPower(0.8);
 
-        }
-        else if(gamepad1.right_trigger>0.8){
+        } else if (gamepad1.right_trigger > 0.8) {
             shootR.setPower(-0.8);
             shootL.setPower(-0.8);
-        }else{
+        } else {
             shootR.setPower(0);
             shootL.setPower(0);
         }

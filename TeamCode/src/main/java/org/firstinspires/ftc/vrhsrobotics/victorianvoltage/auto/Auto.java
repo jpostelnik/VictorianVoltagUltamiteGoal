@@ -34,10 +34,6 @@ import java.io.File;
 import static org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.RobotKalmanFilter.*;
 
 
-/*bsfd
- * test test test*/
-
-
 /**
  * parent class for auto stuff
  */
@@ -299,27 +295,6 @@ public abstract class Auto extends LinearOpMode {
     }
 
 
-//    public String getObjectAmount() {
-//        List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
-//        String a = "";
-//        for (int i = 0; i < 100; i++) {
-//            for (Recognition recognition : updatedRecognitions) {
-//                a =
-//                        recognition.getLabel();
-//                telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
-//                telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
-//                        recognition.getLeft(), recognition.getTop());
-//                telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
-//                        recognition.getRight(), recognition.getBottom());
-//            }
-//            telemetry.update();
-//        }
-////        telemetry.addData("# Object Detected", updatedRecognitions.size());
-//        telemetry.update();
-//        return a;
-//    }
-
-
     /**
      * @param distance distance in inches that the robot move
      * @param power    it is how fast the robot moves
@@ -383,15 +358,11 @@ public abstract class Auto extends LinearOpMode {
             motors.setPower(power);
         }
         double position = 0;
-        SimpleMatrix positionVector = new SimpleMatrix(new double[][]{
-                {0},
-                {0}
-        });
         SimpleMatrix targetVector = new SimpleMatrix(new double[][]{
                 {ticks},
                 {0}
         });
-        double errorMagnitude =1000000;
+        double errorMagnitude = 1000000;
         while (errorMagnitude < 1) {
             position = (shootR.getCurrentPosition() + shootL.getCurrentPosition()) / 2;
             robotKalmanFilter.update(new SimpleMatrix(new double[][]{
@@ -405,7 +376,7 @@ public abstract class Auto extends LinearOpMode {
                     {robotKalmanFilter.getYPosition()}
             });
 
-            SimpleMatrix errorVector = targetVector.minus(currentPosition);
+            SimpleMatrix errorVector = targetVector.minus(currentPositionVector);
             errorMagnitude = Math.sqrt(Math.pow(errorVector.get(0, 0), 2) + Math.pow(errorVector.get(0, 0), 2));
             double correction = pidPositional.correction(errorMagnitude, runtime);
 
@@ -419,7 +390,6 @@ public abstract class Auto extends LinearOpMode {
                 correction(power, heading, "strait", false, 1);
 
             }
-            positionVector = currentPositionVector;
             heartbeat();
         }
         halt();

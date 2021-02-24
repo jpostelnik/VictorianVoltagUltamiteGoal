@@ -29,7 +29,7 @@ public class test extends Auto {
         restRuntime();
         try {
             resetDeadWheels();
-            moveByTime(1,0.5,runtime);
+            moveByTime(1, 0.5, runtime);
 //            printTicks();
             sleep(30000);
 
