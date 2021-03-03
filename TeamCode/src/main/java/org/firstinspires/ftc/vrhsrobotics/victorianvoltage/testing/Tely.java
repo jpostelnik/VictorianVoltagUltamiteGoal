@@ -13,8 +13,8 @@ import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.helper.PositionT
 @TeleOp(name = "telly")
 public class Tely extends OpMode {
     private ElapsedTime runtime = new ElapsedTime();
-    private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, capMotor;
-    private Servo arm, hook, liftPlateLeft, liftPlateRight;
+    private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, feeder;
+    private Servo arm, hook;
     private boolean precision, direction, precisionChanged, directionChanged;
     private boolean useOneGamepad;
     private boolean positionChanged = false;
@@ -29,6 +29,8 @@ public class Tely extends OpMode {
     private final double DEADWHEEL_INCHES_OVER_TICKS = WHEEL_CIRCUMFERENCE_IN / deadWheelTicks;
     private double time = -999;
     private PositionTracker positionTracker = new PositionTracker(0, 0, 0);
+    private boolean intakeSeparate;
+    private boolean feederSeparate;
 
     @Override
     public void init() {
@@ -44,6 +46,8 @@ public class Tely extends OpMode {
         precisionChanged = false;
         directionChanged = false;
         shooting = false;
+        intakeSeparate = true;
+        feederSeparate = true;
 
         closed = false;
         positionChanged = false;
@@ -76,6 +80,9 @@ public class Tely extends OpMode {
         intake = (DcMotorEx) hardwareMap.dcMotor.get("intake");
         intake.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        feeder = (DcMotorEx) hardwareMap.dcMotor.get("feeder");
+        feeder.setDirection(DcMotorSimple.Direction.REVERSE);
+        feeder.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         telemetry.addLine("deadwheels done");
         telemetry.update();
     }
@@ -89,7 +96,6 @@ public class Tely extends OpMode {
         shootL.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
         shootR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
         shootL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
 
@@ -101,12 +107,6 @@ public class Tely extends OpMode {
 
         hook = hardwareMap.servo.get("hook");
         hook.setPosition(1);
-
-        liftPlateLeft = hardwareMap.servo.get("liftPlateLeft");
-        liftPlateLeft.setPosition(0);
-
-        liftPlateRight = hardwareMap.servo.get("liftPlateRight");
-        liftPlateRight.setPosition(0);
     }
 
     @Override
@@ -126,11 +126,11 @@ public class Tely extends OpMode {
     public void loop() {
         telemetry.update();
         driveBot();
+//        separate();
         intake();
         shoot();
         gripWobble();
         moveArm();
-        lowerPlate();
         useEncoders();
 
 
@@ -166,13 +166,12 @@ public class Tely extends OpMode {
             precisionChanged = false;
         }
 
-//        if (gamepad1.x && !directionChanged && !useOneGamepad) {
-//            direction = !direction;
-//            directionChanged = true;
-//        }
-//        else if (!gamepad1.x && !useOneGamepad) {
-//            directionChanged = false;
-//        }
+        if (gamepad1.x && !directionChanged && !useOneGamepad) {
+            direction = !direction;
+            directionChanged = true;
+        } else if (!gamepad1.x && !useOneGamepad) {
+            directionChanged = false;
+        }
 
         double xMagnitude = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);
         double xLinear = direction ? xMagnitude : -xMagnitude;
@@ -228,12 +227,29 @@ public class Tely extends OpMode {
     }
 
     public void intake() {
-        if (gamepad1.right_bumper) {
+//        if (gamepad2.left_trigger > 0.85) {
+//            intake.setPower(1);
+//            feeder.setPower(1);
+//        } else
+        if (gamepad2.right_bumper) {
             intake.setPower(1);
-        } else if (gamepad1.left_bumper) {
+            feeder.setPower(1);
+        } else if (gamepad2.left_bumper) {
             intake.setPower(-1);
+            feeder.setPower(-1);
+
         } else {
             intake.setPower(0);
+            feeder.setPower(0);
+        }
+    }
+
+    public void separate() {
+        if (gamepad2.a) {
+            feederSeparate = !feederSeparate;
+        }
+        if (gamepad2.y) {
+            intakeSeparate = !intakeSeparate;
         }
     }
 
@@ -258,28 +274,12 @@ public class Tely extends OpMode {
 
     public void
     shoot() {
-        if (gamepad1.left_trigger > 0.8) {
-            shootR.setPower(0.8);
-            shootL.setPower(0.8);
-
-        } else if (gamepad1.right_trigger > 0.8) {
+        if (gamepad2.right_trigger > 0.8) {
             shootR.setPower(-0.8);
             shootL.setPower(-0.8);
         } else {
             shootR.setPower(0);
             shootL.setPower(0);
-        }
-    }
-
-    public void lowerPlate() {
-        if (gamepad1.y) {
-            liftPlateLeft.setPosition(grounded ? 1 : 0);
-            liftPlateRight.setPosition(grounded ? 0 : 1);
-
-            grounded = !grounded;
-            positionChanged = true;
-        } else if ((!useOneGamepad && !gamepad2.b) || (useOneGamepad && !gamepad1.b)) {
-            positionChanged = false;
         }
     }
 

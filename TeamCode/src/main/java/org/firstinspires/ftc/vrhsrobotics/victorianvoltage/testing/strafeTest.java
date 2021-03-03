@@ -1,11 +1,13 @@
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.testing;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.Auto;
 
 @Autonomous(name = "Strafe")
+@Disabled
 public class strafeTest extends Auto {
     @Override
     public void runOpMode() throws InterruptedException {

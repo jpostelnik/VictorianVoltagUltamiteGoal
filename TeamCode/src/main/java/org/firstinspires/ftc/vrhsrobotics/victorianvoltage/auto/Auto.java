@@ -5,6 +5,7 @@ import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -31,7 +32,7 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 
 import java.io.File;
 
-import static org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.RobotKalmanFilter.*;
+import static org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.RobotKalmanFilter.getError;
 
 
 /**
@@ -50,7 +51,7 @@ public abstract class Auto extends LinearOpMode {
     private final double DEAD_WHEEL_TO_TICKS = DEAD_WHEEL_TICKS_PER_REV / (Math.PI * DEAD_WHEEL_DIAMTER);
 
 
-    private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, capMotor;
+    private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, feeder;
     private Servo arm, hook, liftPlateLeft, liftPlateRight;
 
     private BNO055IMU imu;
@@ -161,9 +162,16 @@ public abstract class Auto extends LinearOpMode {
         shootR = (DcMotorEx) hardwareMap.dcMotor.get("shootR");
         shootL = (DcMotorEx) hardwareMap.dcMotor.get("shootL");
         intake = (DcMotorEx) hardwareMap.dcMotor.get("intake");
+        feeder = (DcMotorEx) hardwareMap.dcMotor.get("feeder");
 
         shootL.setDirection(DcMotor.Direction.REVERSE);
         shootR.setDirection(DcMotor.Direction.REVERSE);
+        feeder.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        feeder.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        shootR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        shootL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         if (shootR == null) {
             telemetry.addLine("shootR is null");
@@ -178,6 +186,8 @@ public abstract class Auto extends LinearOpMode {
         shootR.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         intake.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         shootL.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        feeder.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+
 
         telemetry.addLine("deadwheels done");
         telemetry.update();
@@ -189,16 +199,16 @@ public abstract class Auto extends LinearOpMode {
      */
     private void initServos() {
         arm = hardwareMap.servo.get("arm");
-        arm.setPosition(1);
+        arm.setPosition(0);
 
         hook = hardwareMap.servo.get("hook");
         hook.setPosition(1);
 
-        liftPlateLeft = hardwareMap.servo.get("liftPlateLeft");
-        liftPlateLeft.setPosition(1);
-
-        liftPlateRight = hardwareMap.servo.get("liftPlateRight");
-        liftPlateRight.setPosition(0);
+//        liftPlateLeft = hardwareMap.servo.get("liftPlateLeft");
+//        liftPlateLeft.setPosition(1);
+//
+//        liftPlateRight = hardwareMap.servo.get("liftPlateRight");
+//        liftPlateRight.setPosition(0);
     }
 
     /**
@@ -303,7 +313,7 @@ public abstract class Auto extends LinearOpMode {
      *                              oof
      */
     @Deprecated
-    public void move(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
+    public void moveOld(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
         resetMotors();
         pid.reset(runtime);
         double deadWheelStart = -1 * shootR.getCurrentPosition();
@@ -350,7 +360,35 @@ public abstract class Auto extends LinearOpMode {
      */
     public void moveByDeadWheels(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
         pid.reset(runtime);
-//        robotKalmanFilter.setInitalPostion();
+        resetDeadWheels();
+        double currentPosition = shootR.getCurrentPosition();
+        int ticks = basicMathCalls.getDeadWheelTicks(distance);
+        for (DcMotorEx motors : driveTrain) {
+            motors.setPower(power);
+        }
+        while (Math.abs(shootR.getCurrentPosition() - currentPosition) < ticks) ;
+        {
+            correction(power, heading, "straight", false, 1);
+            heartbeat();
+        }
+        halt();
+    }
+
+
+    public void move(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
+        pid.reset(runtime);
+        robotKalmanFilter.setInitalPostion(new SimpleMatrix(new double[][]{
+                        {0},
+                        {0},
+                        {0},
+                        {0}
+                }),
+                new SimpleMatrix(new double[][]{
+                        {0, 0, 0, 0},
+                        {0, 0, 0, 0},
+                        {0, 0, 1, 0},
+                        {0, 0, 0, 5}
+                }));
         resetDeadWheels();
         double currentPosition = shootR.getCurrentPosition();
         int ticks = basicMathCalls.getDeadWheelTicks(distance);
@@ -902,14 +940,27 @@ public abstract class Auto extends LinearOpMode {
      *
      */
     public void dropWobble() {
-        arm.setPosition(0);
-        sleep(750);
         hook.setPosition(0);
         sleep(750);
         arm.setPosition(1);
+        sleep(750);
+        arm.setPosition(0);
+        hook.setPosition(1);
+        sleep(250);
+        hook.setPosition(1);
+
+    }
+
+    public void lowerWobble(){
+        hook.setPosition(0);
         sleep(250);
         arm.setPosition(1);
+    }
 
+    public void raiseWobble(){
+        arm.setPosition(0);
+        sleep(250);
+        hook.setPosition(1);
     }
 
     /**
@@ -1112,6 +1163,15 @@ public abstract class Auto extends LinearOpMode {
 //        telemetry.addData("rb", rightBack.getPower());
 //        telemetry.addData("avg power", (rightBack.getPower() + rightFront.getPower() + leftBack.getPower() + leftFront.getPower()) / 4);
 //        telemetry.update();
+    }
+
+    public void runIntake(double t) throws InterruptedException {
+        t += runtime.time();
+        feeder.setPower(1);
+        while (t > runtime.time()) {
+            heartbeat();
+        }
+        feeder.setPower(0);
     }
 
 }
