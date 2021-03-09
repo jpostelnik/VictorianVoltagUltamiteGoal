@@ -20,74 +20,83 @@ public class redWall extends Auto {
             telemetry.addData("Analysis", pipeline.getAnalysis());
             telemetry.addData("Position", pipeline.position);
             telemetry.update();
-            SkystoneDeterminationPipeline.RingPosition location = pipeline.getPosition();
+            SkystoneDeterminationPipeline.RingPosition location = pipeline.position;
             close();
-            //TODO: this will be were the scan method stuff will go, location 0 = a, 1 =b, 4 = c,
-            //todo so if that happens will be after the shooter method
-            location = SkystoneDeterminationPipeline.RingPosition.NONE;
+            //TODO:: Get one and four to work
+            //TODO:: try not to cry
+
+//            location = SkystoneDeterminationPipeline.RingPosition.ONE;
             switch (location) {
                 case ONE:
                     System.out.println("b");
                     telemetry.addLine("b");
                     telemetry.update();
-                    strafeByDeadWheels(1, 0.2, false, 0, runtime);
-                    moveByDeadWheels(86, 0.7, 0, runtime);
-                    strafeByDeadWheels(30, 0.4, true, 0, runtime);
+                    strafeByDeadWheels(4, 0.2, false, 0, runtime);
+                    moveByDeadWheels(90, 0.7, 0, runtime);
+                    strafeByDeadWheels(25, 0.4, true, 0, runtime);
 
 //                    turningPID(180, 0.4, runtime);
                     dropWobble();
-                    strafeByDeadWheels(5, 0.4, true, 0, runtime);
-                    moveByDeadWheels(63, -0.7, 0, runtime);
+                    strafeByDeadWheels(20, 0.4, true, 0, runtime);
+                    moveByDeadWheels(65, -0.7, 0, runtime);
 
                     lowerWobble();
                     sleep(1000);
                     strafeByDeadWheels(3, 0.3, false, 0, runtime);
                     raiseWobble();
                     sleep(1000);
-                    moveByDeadWheels(63, 0.7, 0, runtime);
-                    strafeByDeadWheels(5, 0.6, false, 0, runtime);
+                    moveByDeadWheels(71, 0.7, 0, runtime);
+                    strafeByDeadWheels(10, 0.6, false, 0, runtime);
                     dropWobble();
+                    moveByDeadWheels(15, -0.7, 0, runtime );
 
                     break;
                 case FOUR:
                     System.out.println("c");
                     telemetry.addLine("c");
                     telemetry.update();
-                    strafeByDeadWheels(1, 0.2, false, 0, runtime);
-                    moveByDeadWheels(110, 0.7, 0, runtime);
-                    strafeByDeadWheels(4, 0.4, true, 0, runtime);
+                    strafeByDeadWheels(4, 0.3, false, 0, runtime);
+                    moveByDeadWheels(110, 0.8, 0, runtime);
+//                    strafeByDeadWheels(5, 0.3, true, 0, runtime);
 
                     dropWobble();
 
-                    strafeByDeadWheels(35, 0.4, true, 0, runtime);
-                    moveByDeadWheels(87, -0.7, 0, runtime);
+                    strafeByDeadWheels(41, 0.3, true, 0, runtime);
+                    moveByDeadWheels(87, -0.8, 0, runtime);
 
                     lowerWobble();
                     sleep(1000);
                     strafeByDeadWheels(3, 0.3, false, 0, runtime);
                     raiseWobble();
                     sleep(1000);
-                    moveByDeadWheels(87, 0.7, 0, runtime);
-                    strafeByDeadWheels(34, 0.6, false, 0, runtime);
+                    moveByDeadWheels(96, 0.8, 0, runtime);
+                    strafeByDeadWheels(30, 0.3, false, 0, runtime);
                     dropWobble();
+                    moveByDeadWheels(30, -0.8, 0, runtime);
+
                     break;
                 default:
                     // TODO: 9/29/20 add spline movement there
                     System.out.println("a");
                     telemetry.addLine("a");
                     telemetry.update();
-                    moveByDeadWheels(68, 0.7, 0, runtime);
+                    moveByDeadWheels(63, 0.7, 0, runtime);
                     dropWobble();
-//                    strafeByDeadWheels(35, 0.6, true, 0, runtime);
-//                    moveByDeadWheels(45, -0.7, 0, runtime);
-//                    lowerWobble();
-//                    sleep(1000);
-//                    strafeByDeadWheels(3, 0.3, false, 0, runtime);
-//                    raiseWobble();
-//                    sleep(1000);
-//                    moveByDeadWheels(59, 0.7, 0, runtime);
-//                    strafeByDeadWheels(34, 0.6, false, 0, runtime);
-//                    dropWobble();
+                    strafeByDeadWheels(39, 0.5, true, 0, runtime);
+                    moveByDeadWheels(44, -0.7, 0, runtime);
+                    lowerWobble();
+                    sleep(1000);
+                    strafeByDeadWheels(3, 0.3, false, 0, runtime);
+                    raiseWobble();
+                    sleep(1000);
+                    moveByDeadWheels(57, 0.7, 0, runtime);
+                    strafeByDeadWheels(34, 0.5, false, 0, runtime);
+                    dropWobble();
+                    strafeByDeadWheels(8, 0.5, true, 0, runtime);
+                    moveByDeadWheels(18, -0.5, 0, runtime);
+                    shoot(0.8, 1);
+                    moveByDeadWheels(8, 0.5, 0, runtime);
+
                     break;
                 //todo: will be what is in 0. So might remove it.
             }

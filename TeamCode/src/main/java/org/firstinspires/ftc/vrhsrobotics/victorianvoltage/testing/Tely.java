@@ -10,6 +10,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.helper.PositionTracker;
 
+import static android.os.SystemClock.sleep;
+
 @TeleOp(name = "telly")
 public class Tely extends OpMode {
     private ElapsedTime runtime = new ElapsedTime();
@@ -258,6 +260,7 @@ public class Tely extends OpMode {
         if (gamepad1.dpad_down) {
             hook.setPosition(closed ? 1 : 0.1);
             closed = !closed;
+            sleep(100);
         } else if ((!useOneGamepad && !gamepad2.b) || (useOneGamepad && !gamepad1.b)) {
             positionChanged = false;
         }
@@ -267,6 +270,7 @@ public class Tely extends OpMode {
         if (gamepad1.dpad_up) {
             arm.setPosition(lowered ? 1 : 0.1);
             lowered = !lowered;
+            sleep(100);
         } else if ((!useOneGamepad && !gamepad2.b) || (useOneGamepad && !gamepad1.b)) {
             positionChanged = false;
         }

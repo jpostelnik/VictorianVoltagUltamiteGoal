@@ -65,7 +65,7 @@ public abstract class Auto extends LinearOpMode {
     //pids
     private PIDController pid = new PIDController(runtime, 0.8, 0, 0.2);
     private PIDController pidTurning = new PIDController(runtime, 1, 0, 0);
-    private PIDController pidStrafe = new PIDController(runtime, 0.8, 0, 0);
+    private PIDController pidStrafe = new PIDController(runtime, 0.08, 0, 0);
     private PIDController pidDiagonal = new PIDController(runtime, 0.01, 0, 0);
     private PIDController pidPositional = new PIDController(runtime, 0.7, 0.1, 0);
 
@@ -97,8 +97,8 @@ public abstract class Auto extends LinearOpMode {
 
     SimpleMatrix H = SimpleMatrix.identity(f.numRows());
 
-    double positionVar = 0.5;
-    double velocityVar = 0.1;
+    double positionVar = 0.05;
+    double velocityVar = 0.0001;
 
     SimpleMatrix R = new SimpleMatrix(new double[][]{
             {positionVar, 0, 0, 0},
@@ -164,8 +164,8 @@ public abstract class Auto extends LinearOpMode {
         intake = (DcMotorEx) hardwareMap.dcMotor.get("intake");
         feeder = (DcMotorEx) hardwareMap.dcMotor.get("feeder");
 
-        shootL.setDirection(DcMotor.Direction.REVERSE);
-        shootR.setDirection(DcMotor.Direction.REVERSE);
+//        shootL.setDirection(DcMotor.Direction.REVERSE);
+//        shootR.setDirection(DcMotor.Direction.REVERSE);
         feeder.setDirection(DcMotorSimple.Direction.REVERSE);
 
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -375,8 +375,9 @@ public abstract class Auto extends LinearOpMode {
     }
 
 
-    public void move(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
+    public void move(double distanceX, double distanceY, double power, int heading, ElapsedTime runtime) throws InterruptedException {
         pid.reset(runtime);
+        resetDeadWheels();
         robotKalmanFilter.setInitalPostion(new SimpleMatrix(new double[][]{
                         {0},
                         {0},
@@ -391,23 +392,25 @@ public abstract class Auto extends LinearOpMode {
                 }));
         resetDeadWheels();
         double currentPosition = shootR.getCurrentPosition();
-        int ticks = basicMathCalls.getDeadWheelTicks(distance);
+        int ticksX = basicMathCalls.getDeadWheelTicks(distanceX);
+        int ticksY = basicMathCalls.getDeadWheelTicks(distanceY);
         for (DcMotorEx motors : driveTrain) {
             motors.setPower(power);
         }
         double position = 0;
         SimpleMatrix targetVector = new SimpleMatrix(new double[][]{
-                {ticks},
-                {0}
+                {ticksX},
+                {ticksY}
         });
         double errorMagnitude = 1000000;
         while (errorMagnitude < 1) {
-            position = (shootR.getCurrentPosition() + shootL.getCurrentPosition()) / 2;
+            double start = runtime.milliseconds();
+            position = /*(*/shootR.getCurrentPosition() /*+ shootL.getCurrentPosition()) / 2*/;
             robotKalmanFilter.update(new SimpleMatrix(new double[][]{
                     {position},
                     {intake.getCurrentPosition()},
-                    {leftRear.getVelocity()},
-                    {0}
+                    {shootR.getVelocity()},
+                    {intake.getVelocity()}
             }));
             SimpleMatrix currentPositionVector = new SimpleMatrix(new double[][]{
                     {robotKalmanFilter.getXPosition()},
@@ -419,15 +422,17 @@ public abstract class Auto extends LinearOpMode {
             double correction = pidPositional.correction(errorMagnitude, runtime);
 
             if (correction > 4000) {
-//                correction(heading, "strait", power, 1);
-                correction(power, heading, "strait", false, 1);
+                correction(power, heading, "straight", false, 1);
 
             } else {
                 power *= correction / 4000;
-//                correction(heading, "strait", power, 1);
-                correction(power, heading, "strait", false, 1);
+                correction(power, heading, "straight", false, 1);
 
             }
+            double end = runtime.milliseconds();
+            double elapsedTime = end-start;
+            telemetry.addData("elapsed time", elapsedTime);
+            telemetry.update();
             heartbeat();
         }
         halt();
@@ -465,7 +470,7 @@ public abstract class Auto extends LinearOpMode {
 
         while (Math.abs(intake.getCurrentPosition() - currentPosition) < ticks) ;
         {
-            correction(heading, "strafe" + direction, power, 1);
+            correction(power, heading, "strafe", false, 1);
             heartbeat();
         }
         halt();
@@ -628,8 +633,24 @@ public abstract class Auto extends LinearOpMode {
      * @return returns the angle in degrees
      */
     protected double getCurrentAngle() {
-        return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
+        return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYX, AngleUnit.DEGREES).firstAngle;
 
+    }
+
+    protected void printAngle() {
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYX, AngleUnit.DEGREES).firstAngle);
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).firstAngle);
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XZX, AngleUnit.DEGREES).firstAngle);
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XZX, AngleUnit.DEGREES).firstAngle);
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.YXY, AngleUnit.DEGREES).firstAngle);
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle);
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.YXZ, AngleUnit.DEGREES).firstAngle);
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.YZX, AngleUnit.DEGREES).firstAngle);
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.YZY, AngleUnit.DEGREES).firstAngle);
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle);
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYZ, AngleUnit.DEGREES).firstAngle);
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZXZ, AngleUnit.DEGREES).firstAngle);
+//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZXY, AngleUnit.DEGREES).firstAngle);
     }
 
     /**
@@ -951,15 +972,15 @@ public abstract class Auto extends LinearOpMode {
 
     }
 
-    public void lowerWobble(){
+    public void lowerWobble() {
         hook.setPosition(0);
         sleep(250);
         arm.setPosition(1);
     }
 
-    public void raiseWobble(){
+    public void raiseWobble() {
         arm.setPosition(0);
-        sleep(250);
+        sleep(500);
         hook.setPosition(1);
     }
 
@@ -967,7 +988,7 @@ public abstract class Auto extends LinearOpMode {
      *
      */
     public void turnOnShooter(double power) {
-        shootL.setPower(power);
+        shootR.setPower(power);
         shootL.setPower(power);
     }
 
@@ -976,6 +997,7 @@ public abstract class Auto extends LinearOpMode {
      */
     public void turnOnIntake(double power) {
         intake.setPower(power);
+        feeder.setPower(power);
     }
 
     /**
@@ -983,11 +1005,12 @@ public abstract class Auto extends LinearOpMode {
      */
     public void turnOffShooter() {
         shootL.setPower(0);
-        shootL.setPower(0);
+        shootR.setPower(0);
     }
 
     public void turnOffIntake() {
         intake.setPower(0);
+        feeder.setPower(0);
     }
 
     /**
@@ -999,15 +1022,33 @@ public abstract class Auto extends LinearOpMode {
      */
     public void shoot(double powerShooter, double powerIntake) throws InterruptedException {
         double startTime = runtime.time();
-        turnOnShooter(powerShooter);
-        sleep(2000);
+//        turnOnShooter(powerShooter);
+        shootR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        shootL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        shootL.setPower(powerShooter);
+        shootR.setPower(powerShooter);
+//        sleep(4000);
+        while (4 + startTime > runtime.time()) {
+            heartbeat();
+            System.out.println(shootL.getVelocity());
+            System.out.println(shootR.getVelocity());
+
+        }
+        startTime += 4;
         turnOnIntake(powerIntake);
 
-        while (5 + startTime > runtime.time()) {
+        while (8 + startTime > runtime.time()) {
             heartbeat();
+            System.out.println(shootL.getVelocity());
+            System.out.println(shootR.getVelocity());
+
         }
         turnOffIntake();
         turnOffShooter();
+        shootR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shootL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+
     }
 
     /**

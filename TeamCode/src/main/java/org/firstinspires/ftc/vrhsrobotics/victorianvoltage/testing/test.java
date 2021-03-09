@@ -26,12 +26,13 @@ public class test extends Auto {
         waitForStart();
         runtime.reset();
         restRuntime();
+
         try {
-           runIntake(10);
-
+            move(5,8,1,0,runtime);
         } catch (InterruptedException e) {
-
+            e.printStackTrace();
         }
-
     }
+
+
 }

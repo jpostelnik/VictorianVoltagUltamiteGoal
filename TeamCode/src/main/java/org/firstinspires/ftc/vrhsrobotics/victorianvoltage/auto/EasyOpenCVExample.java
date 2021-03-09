@@ -101,7 +101,7 @@ public class EasyOpenCVExample extends LinearOpMode
         /*
          * The core values which define the location and size of the sample regions
          */
-        static final Point REGION1_TOPLEFT_ANCHOR_POINT = new Point(80,50);
+        static final Point REGION1_TOPLEFT_ANCHOR_POINT = new Point(80,70);
 
         static final int REGION_WIDTH = 35;
         static final int REGION_HEIGHT = 25;
