@@ -32,6 +32,7 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 
 import java.io.File;
 
+import static org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.basicMathCalls.ticksToInch;
 import static org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.RobotKalmanFilter.getError;
 
 
@@ -75,7 +76,7 @@ public abstract class Auto extends LinearOpMode {
 
     //KalmanFilter Filter
     // 10 updates per second
-    double dt = 1.0 / 10;
+    double dt = 0.018;
     SimpleMatrix f = new SimpleMatrix(new double[][]{
             {1, 0, dt, 0},
             {0, 1, 0, dt},
@@ -92,12 +93,12 @@ public abstract class Auto extends LinearOpMode {
             {dt}
     });
 
-    double sigma_a = 1;
+    double sigma_a = 0.1;
     SimpleMatrix Q = G.mult(G.transpose()).scale(sigma_a * sigma_a);
 
     SimpleMatrix H = SimpleMatrix.identity(f.numRows());
 
-    double positionVar = 0.05;
+    double positionVar = 0.0005;
     double velocityVar = 0.0001;
 
     SimpleMatrix R = new SimpleMatrix(new double[][]{
@@ -129,7 +130,7 @@ public abstract class Auto extends LinearOpMode {
     }
 
     /**
-     *
+     * currentPositionVector
      */
     private void intSensors() {
 
@@ -375,7 +376,7 @@ public abstract class Auto extends LinearOpMode {
     }
 
 
-    public void move(double distanceX, double distanceY, double power, int heading, ElapsedTime runtime) throws InterruptedException {
+    public void move(double distanceX, double power, int heading, ElapsedTime runtime) throws InterruptedException {
         pid.reset(runtime);
         resetDeadWheels();
         robotKalmanFilter.setInitalPostion(new SimpleMatrix(new double[][]{
@@ -387,56 +388,113 @@ public abstract class Auto extends LinearOpMode {
                 new SimpleMatrix(new double[][]{
                         {0, 0, 0, 0},
                         {0, 0, 0, 0},
-                        {0, 0, 1, 0},
-                        {0, 0, 0, 5}
+                        {0, 0, 0.1, 0},
+                        {0, 0, 0, 0.5}
                 }));
         resetDeadWheels();
         double currentPosition = shootR.getCurrentPosition();
         int ticksX = basicMathCalls.getDeadWheelTicks(distanceX);
-        int ticksY = basicMathCalls.getDeadWheelTicks(distanceY);
+        int ticksY = basicMathCalls.getDeadWheelTicks(0);
         for (DcMotorEx motors : driveTrain) {
             motors.setPower(power);
         }
-        double position = 0;
         SimpleMatrix targetVector = new SimpleMatrix(new double[][]{
-                {ticksX},
-                {ticksY}
+                {distanceX},
+                {0}
         });
         double errorMagnitude = 1000000;
-        while (errorMagnitude < 1) {
+        int z = (int) (2 * DEAD_WHEEL_TO_TICKS);
+        DcMotorEx encX = shootR;
+        DcMotorEx encY = intake;
+        while (Math.abs(shootR.getCurrentPosition() - currentPosition) < ticksX) {
             double start = runtime.milliseconds();
-            position = /*(*/shootR.getCurrentPosition() /*+ shootL.getCurrentPosition()) / 2*/;
-            robotKalmanFilter.update(new SimpleMatrix(new double[][]{
-                    {position},
-                    {intake.getCurrentPosition()},
-                    {shootR.getVelocity()},
-                    {intake.getVelocity()}
-            }));
+
+            SimpleMatrix z_k = new SimpleMatrix(new double[][]{
+                    {ticksToInch(encX.getCurrentPosition())},
+                    {ticksToInch(encY.getCurrentPosition())},
+                    {ticksToInch(encX.getVelocity())},
+                    {ticksToInch(encY.getVelocity())}
+            });
+            SimpleMatrix updatedEst = robotKalmanFilter.update(z_k);
             SimpleMatrix currentPositionVector = new SimpleMatrix(new double[][]{
-                    {robotKalmanFilter.getXPosition()},
-                    {robotKalmanFilter.getYPosition()}
+                    {ticksToInch(robotKalmanFilter.getXPosition())},
+                    {ticksToInch(robotKalmanFilter.getYPosition())}
             });
 
             SimpleMatrix errorVector = targetVector.minus(currentPositionVector);
             errorMagnitude = Math.sqrt(Math.pow(errorVector.get(0, 0), 2) + Math.pow(errorVector.get(0, 0), 2));
             double correction = pidPositional.correction(errorMagnitude, runtime);
-
-            if (correction > 4000) {
-                correction(power, heading, "straight", false, 1);
-
-            } else {
-                power *= correction / 4000;
-                correction(power, heading, "straight", false, 1);
-
-            }
+//            double degrees = basicMathCalls.getAngleDegrees(errorVector.get(0), errorVector.get(0));
+//            double secondPower = basicMathCalls.getSecondPower(degrees, power);
+//            if (correction > 4000) {
+////                correction(power, heading, "straight", false, 1);
+//
+//            } else {
+//                power *= correction / 4000;
+//                secondPower = basicMathCalls.getSecondPower(degrees, power);
+////                correction(power, heading, "straight", false, 1);
+//
+////
+//            if(distanceY == 0){
+//                if(distanceX>0) {
+//                    leftFront.setPower(power);
+//                    leftRear.setPower(power);
+//                    rightRear.setPower(power);
+//                    rightFront.setPower(power);
+//                }else{
+//                    leftFront.setPower(-power);
+//                    leftRear.setPower(-power);
+//                    rightRear.setPower(-power);
+//                    rightFront.setPower(-power);
+//                }
+//            }
+//            else
+//                if (degrees == 90) {
+//                    leftFront.setPower(power);
+//                    leftRear.setPower(-power);
+//                    rightRear.setPower(power);
+//                    rightFront.setPower(-power);
+//                } else if (degrees == -90) {
+//                    leftFront.setPower(-power);
+//                    leftRear.setPower(power);
+//                    rightRear.setPower(-power);
+//                    rightFront.setPower(power);
+//                } else if (degrees < 90 && degrees > -90) {
+////                telemetry.addLine("right");
+////                telemetry.update();
+//                    leftFront.setPower(secondPower);
+//                    leftRear.setPower(power);
+//                    rightFront.setPower(power);
+//                    rightRear.setPower(secondPower);
+//                } else {
+////                inv = true;
+////                telemetry.addLine("left");
+////                telemetry.update();
+//                    leftFront.setPower(power);
+//                    leftRear.setPower(secondPower);
+//                    rightFront.setPower(secondPower);
+//                    rightRear.setPower(power);
+//                }
+            leftFront.setPower(power);
+            leftRear.setPower(power);
+            rightRear.setPower(power);
+            rightFront.setPower(power);
             double end = runtime.milliseconds();
-            double elapsedTime = end-start;
-            telemetry.addData("elapsed time", elapsedTime);
+            double elapsedTime = end - start;
+            System.out.println("elapsedTime = " + elapsedTime);
+            System.out.println("z_k = "+z_k.transpose());
+            System.out.println("updatedEst = "+updatedEst.transpose());
+//            telemetry.addData("current", currentPositionVector);
+//            System.out.println("CurrentVector = "+currentPositionVector.transpose());
+//            telemetry.addData("errorVector", errorVector);
+//            System.out.println("Error vector = "+errorVector.transpose());
+
             telemetry.update();
             heartbeat();
         }
         halt();
     }
+
 
     /**
      * @param distance
@@ -451,7 +509,6 @@ public abstract class Auto extends LinearOpMode {
         resetDeadWheels();
         pidStrafe.reset(runtime);
         double currentPosition = intake.getCurrentPosition();
-
         int ticks = basicMathCalls.getDeadWheelTicks(distance);
         String direction = "";
         if (left) {
@@ -496,11 +553,6 @@ public abstract class Auto extends LinearOpMode {
             heartbeat();
         }
         halt();
-//
-//        double endingPositon = leftRear.getCurrentPosition();
-//
-//        telemetry.addData("change in positions in ticks", (endingPositon + statingPosition));
-//        telemetry.update();
     }
 
     /**
@@ -638,19 +690,19 @@ public abstract class Auto extends LinearOpMode {
     }
 
     protected void printAngle() {
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYX, AngleUnit.DEGREES).firstAngle);
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).firstAngle);
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XZX, AngleUnit.DEGREES).firstAngle);
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XZX, AngleUnit.DEGREES).firstAngle);
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.YXY, AngleUnit.DEGREES).firstAngle);
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle);
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.YXZ, AngleUnit.DEGREES).firstAngle);
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.YZX, AngleUnit.DEGREES).firstAngle);
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.YZY, AngleUnit.DEGREES).firstAngle);
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle);
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYZ, AngleUnit.DEGREES).firstAngle);
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZXZ, AngleUnit.DEGREES).firstAngle);
-//        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZXY, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYX, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XZX, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XZX, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.YXY, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.YXZ, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.YZX, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.YZY, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYZ, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZXZ, AngleUnit.DEGREES).firstAngle);
+        System.out.println(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZXY, AngleUnit.DEGREES).firstAngle);
     }
 
     /**

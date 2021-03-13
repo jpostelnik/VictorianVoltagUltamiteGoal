@@ -25,7 +25,7 @@ public class redWall extends Auto {
             //TODO:: Get one and four to work
             //TODO:: try not to cry
 
-//            location = SkystoneDeterminationPipeline.RingPosition.ONE;
+            location = SkystoneDeterminationPipeline.RingPosition.NONE;
             switch (location) {
                 case ONE:
                     System.out.println("b");
@@ -48,7 +48,7 @@ public class redWall extends Auto {
                     moveByDeadWheels(71, 0.7, 0, runtime);
                     strafeByDeadWheels(10, 0.6, false, 0, runtime);
                     dropWobble();
-                    moveByDeadWheels(15, -0.7, 0, runtime );
+                    moveByDeadWheels(15, -0.7, 0, runtime);
 
                     break;
                 case FOUR:
@@ -95,7 +95,9 @@ public class redWall extends Auto {
                     strafeByDeadWheels(8, 0.5, true, 0, runtime);
                     moveByDeadWheels(18, -0.5, 0, runtime);
                     shoot(0.8, 1);
-                    moveByDeadWheels(8, 0.5, 0, runtime);
+//                    moveByDeadWheels(8, 0.5, 0, runtime);
+
+//                    move(63, 0, 1, 0, runtime);
 
                     break;
                 //todo: will be what is in 0. So might remove it.

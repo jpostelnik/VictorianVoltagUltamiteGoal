@@ -28,7 +28,8 @@ public class test extends Auto {
         restRuntime();
 
         try {
-            move(5,8,1,0,runtime);
+            move(15,0.25,0,runtime);
+            sleep(10000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

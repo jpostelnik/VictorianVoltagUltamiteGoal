@@ -73,4 +73,8 @@ public class basicMathCalls {
     public static int getDeadWheelTicks(double distance) {
         return (int) (distance * DEAD_WHEEL_TO_TICKS);
     }
+
+    public static double ticksToInch(double ticks){
+        return (ticks/DEAD_WHEEL_TO_TICKS);
+    }
 }
