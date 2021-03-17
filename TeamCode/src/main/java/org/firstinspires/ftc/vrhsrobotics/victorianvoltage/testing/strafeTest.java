@@ -16,6 +16,6 @@ public class strafeTest extends Auto {
         waitForStart();
         resetStartTime();
         strafeByDeadWheels(12,0.5,false,0,runtime);
-        strafe(12,0.5,false,0,runtime);
+//        strafe(12,0.5,false,0,runtime);
     }
 }

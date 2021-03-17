@@ -16,9 +16,9 @@ public class digonalStrafeTest extends Auto {
         ElapsedTime runtime = new ElapsedTime();
         waitForStart();
         runtime.reset();
-        diagonalStrafe(5, 5, 0.5, 0, runtime);
-        diagonalStrafe(10, 8, 0.5, 0, runtime);
-        diagonalStrafe(5, 8, 0.5, 0, runtime);
+        diagonalStrafeOld(5, 5, 0.5, 0, runtime);
+        diagonalStrafeOld(10, 8, 0.5, 0, runtime);
+        diagonalStrafeOld(5, 8, 0.5, 0, runtime);
 
     }
 }

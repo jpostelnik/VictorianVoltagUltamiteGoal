@@ -6,7 +6,7 @@ public class KalmanFilter {
     //
     private SimpleMatrix x_k_1, P_k_1;
     //system paramters
-    private SimpleMatrix F, G, R, Q, H, I;
+    private SimpleMatrix F, G, R, Q, H, I, B;
 
     public KalmanFilter(SimpleMatrix f, SimpleMatrix g, SimpleMatrix r, SimpleMatrix q, SimpleMatrix h) {
         F = f;
@@ -17,9 +17,10 @@ public class KalmanFilter {
         I = SimpleMatrix.identity(F.numRows());
     }
 
-    public void setInitalPostion(SimpleMatrix x_0, SimpleMatrix P_0) {
+    public void setInitalPostion(SimpleMatrix x_0, SimpleMatrix P_0, SimpleMatrix B) {
         x_k_1 = x_0;
         P_k_1 = P_0;
+        this.B = B;
     }
 
 
@@ -27,8 +28,8 @@ public class KalmanFilter {
      * @param z_k - observation
      * @return
      */
-    public SimpleMatrix update(SimpleMatrix z_k) {
-        SimpleMatrix x_k_est = F.mult(x_k_1);
+    public SimpleMatrix update(SimpleMatrix z_k,SimpleMatrix U_U) {
+        SimpleMatrix x_k_est = F.mult(x_k_1).plus(B.mult(U_U));
         SimpleMatrix P_k_est = F.mult(P_k_1).mult(F.transpose()).plus(Q);
 
         SimpleMatrix y_k = z_k.minus(H.mult(x_k_est));
