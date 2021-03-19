@@ -28,11 +28,22 @@ public class test extends Auto {
         restRuntime();
 
         try {
-            move(15,1,0,runtime);
-            sleep(10000);
+            powerShot(runtime);
+//            sleep(10000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    public void powerShot(ElapsedTime runtime) throws InterruptedException {
+
+        turnOffEncoders();
+        strafeByDeadWheels(3, 0.5, true, 0, runtime);
+        shoot(0.8, 1);
+        strafeByDeadWheels(3, 0.5, true, 0, runtime);
+        shoot(0.8, 1);
+        strafeByDeadWheels(3, 0.5, true, 0, runtime);
+        turnOnEncoders();
     }
 
 

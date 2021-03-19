@@ -119,24 +119,15 @@ public class redWall extends Auto {
 
         }
     }
-    public void powerShot(ElapsedTime runtime){
-        try {
-            turnOffEncoders();
-            strafeByDeadWheels(3, 0.5, true, 0, runtime);
-            shoot(0.8, 1);
-            strafeByDeadWheels(3, 0.5, true, 0, runtime);
-            shoot(0.8, 1);
-            strafeByDeadWheels(3, 0.5, true, 0, runtime);
-            turnOnEncoders();
-        }
-        catch (Exception e) {
-            halt();
-            turnOffIntake();
-            turnOffShooter();
-            close();
-            telemetry.addLine(e.getStackTrace().toString());
-            telemetry.update();
 
-        }
+    public void powerShot(ElapsedTime runtime) throws InterruptedException {
+
+        turnOffEncoders();
+        strafeByDeadWheels(3, 0.5, true, 0, runtime);
+        shoot(0.8, 1);
+        strafeByDeadWheels(3, 0.5, true, 0, runtime);
+        shoot(0.8, 1);
+        strafeByDeadWheels(3, 0.5, true, 0, runtime);
+        turnOnEncoders();
     }
 }
