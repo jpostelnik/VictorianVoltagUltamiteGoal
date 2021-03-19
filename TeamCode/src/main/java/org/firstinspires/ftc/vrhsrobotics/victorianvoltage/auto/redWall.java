@@ -49,7 +49,8 @@ public class redWall extends Auto {
                     strafeByDeadWheels(10, 0.6, false, 0, runtime);
                     dropWobble();
                     moveByDeadWheels(15, -0.7, 0, runtime);
-
+                    // strafeByDeadWheels(5, 0.6, true, 0, runtime);
+                    // shoot(0.8, 1);
                     break;
                 case FOUR:
                     System.out.println("c");
@@ -73,13 +74,15 @@ public class redWall extends Auto {
                     strafeByDeadWheels(30, 0.3, false, 0, runtime);
                     dropWobble();
                     moveByDeadWheels(30, -0.8, 0, runtime);
-
+                    //strafeByDeadWheels(5, 0.6, true, 0, runtime);
+                    //shoot(0.8, 1);
                     break;
                 default:
                     // TODO: 9/29/20 add spline movement there
                     System.out.println("a");
                     telemetry.addLine("a");
                     telemetry.update();
+                    strafeByDeadWheels(4, 0.2, false, 0, runtime);
                     moveByDeadWheels(63, 0.7, 0, runtime);
                     dropWobble();
                     strafeByDeadWheels(39, 0.5, true, 0, runtime);
@@ -94,7 +97,9 @@ public class redWall extends Auto {
                     dropWobble();
                     strafeByDeadWheels(8, 0.5, true, 0, runtime);
                     moveByDeadWheels(18, -0.5, 0, runtime);
-                    shoot(0.8, 1);
+                    //strafeByDeadWheels(30, 0.5, true, 0, runtime);
+                    powerShot(runtime);
+
 //                    moveByDeadWheels(8, 0.5, 0, runtime);
 
 //                    move(63, 0, 1, 0, runtime);
@@ -105,6 +110,26 @@ public class redWall extends Auto {
             telemetry.addData("object", location);
 
         } catch (Exception e) {
+            halt();
+            turnOffIntake();
+            turnOffShooter();
+            close();
+            telemetry.addLine(e.getStackTrace().toString());
+            telemetry.update();
+
+        }
+    }
+    public void powerShot(ElapsedTime runtime){
+        try {
+            turnOffEncoders();
+            strafeByDeadWheels(3, 0.5, true, 0, runtime);
+            shoot(0.8, 1);
+            strafeByDeadWheels(3, 0.5, true, 0, runtime);
+            shoot(0.8, 1);
+            strafeByDeadWheels(3, 0.5, true, 0, runtime);
+            turnOnEncoders();
+        }
+        catch (Exception e) {
             halt();
             turnOffIntake();
             turnOffShooter();

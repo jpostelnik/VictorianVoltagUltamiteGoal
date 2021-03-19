@@ -1611,5 +1611,12 @@ public abstract class Auto extends LinearOpMode {
         }
         feeder.setPower(0);
     }
-
+    public void turnOffEncoders(){
+        shootR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        shootL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+ public void turnOnEncoders(){
+     shootR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+     shootL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+ }
 }
