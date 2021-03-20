@@ -25,10 +25,15 @@ public class test extends Auto {
         initialize();
         waitForStart();
         runtime.reset();
+
         restRuntime();
 
         try {
-            powerShot(runtime);
+            strafeByDeadWheels(3, 0.3, false, 0, runtime);
+            shoot(0.8, 1);
+            strafeByDeadWheels(3, 0.3, false, 0, runtime);
+            shoot(0.8, 1);
+            strafeByDeadWheels(3, 0.3, false, 0, runtime);
 //            sleep(10000);
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -37,13 +42,9 @@ public class test extends Auto {
 
     public void powerShot(ElapsedTime runtime) throws InterruptedException {
 
-        turnOffEncoders();
-        strafeByDeadWheels(3, 0.5, true, 0, runtime);
-        shoot(0.8, 1);
-        strafeByDeadWheels(3, 0.5, true, 0, runtime);
-        shoot(0.8, 1);
-        strafeByDeadWheels(3, 0.5, true, 0, runtime);
-        turnOnEncoders();
+
+
+
     }
 
 

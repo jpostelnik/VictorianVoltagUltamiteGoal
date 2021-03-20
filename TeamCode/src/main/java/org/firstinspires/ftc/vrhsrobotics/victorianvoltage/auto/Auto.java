@@ -1354,6 +1354,7 @@ public abstract class Auto extends LinearOpMode {
         ReadWriteFile.writeFile(file, calibrationData.serialize());
     }
 
+
     /**
      *
      */
@@ -1420,21 +1421,16 @@ public abstract class Auto extends LinearOpMode {
     public void shoot(double powerShooter, double powerIntake) throws InterruptedException {
         double startTime = runtime.time();
 //        turnOnShooter(powerShooter);
-        shootR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        shootL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        turnOffEncoders();
         shootL.setPower(powerShooter);
         shootR.setPower(powerShooter);
 //        sleep(4000);
-        while (4 + startTime > runtime.time()) {
+        while (0.25 + startTime > runtime.time()) {
             heartbeat();
-            System.out.println(shootL.getVelocity());
-            System.out.println(shootR.getVelocity());
-
         }
-        startTime += 4;
         turnOnIntake(powerIntake);
 
-        while (8 + startTime > runtime.time()) {
+        while (3 + startTime > runtime.time()) {
             heartbeat();
             System.out.println(shootL.getVelocity());
             System.out.println(shootR.getVelocity());
@@ -1442,10 +1438,7 @@ public abstract class Auto extends LinearOpMode {
         }
         turnOffIntake();
         turnOffShooter();
-        shootR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        shootL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-
+        turnOnEncoders();
     }
 
     /**
