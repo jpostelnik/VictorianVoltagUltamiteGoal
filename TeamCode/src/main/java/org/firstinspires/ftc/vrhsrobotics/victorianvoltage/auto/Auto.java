@@ -76,7 +76,7 @@ public abstract class Auto extends LinearOpMode {
 
     //KalmanFilter Filter
     // 10 updates per second
-    double dt = 0.018;
+    double dt = 0.05;
     SimpleMatrix f = new SimpleMatrix(new double[][]{
             {1, 0, dt, 0},
             {0, 1, 0, dt},
@@ -93,13 +93,13 @@ public abstract class Auto extends LinearOpMode {
             {dt}
     });
 
-    double sigma_a = 0.1;
+    double sigma_a = 0.05;
     SimpleMatrix Q = G.mult(G.transpose()).scale(sigma_a * sigma_a);
 
     SimpleMatrix H = SimpleMatrix.identity(f.numRows());
 
-    double positionVar = 0.0005;
-    double velocityVar = 0.0001;
+    double positionVar = 0.5;
+    double velocityVar = 0.1;
 
     SimpleMatrix R = new SimpleMatrix(new double[][]{
             {positionVar, 0, 0, 0},
@@ -108,6 +108,23 @@ public abstract class Auto extends LinearOpMode {
             {0, 0, 0, velocityVar}
     });
 
+
+    double a_x = 40;
+    double a_y = 0;
+
+    SimpleMatrix u_u = new SimpleMatrix(new double[][]{
+            {a_x},
+            {a_y},
+            {a_x},
+            {a_y}
+    });
+
+    SimpleMatrix u_0 = new SimpleMatrix(new double[][]{
+            {0},
+            {0},
+            {0},
+            {0}
+    });
 
     KalmanFilter robotKalmanFilter = new KalmanFilter(f, G, R, Q, H);
 
@@ -379,6 +396,8 @@ public abstract class Auto extends LinearOpMode {
 
     public void move(double distanceX, double power, int heading, ElapsedTime runtime) throws InterruptedException {
         pid.reset(runtime);
+        a_x = 40;
+        a_y = 0;
         resetDeadWheels();
         double theta = Math.PI / 2;
         SimpleMatrix B = new SimpleMatrix(new double[][]{
@@ -396,10 +415,10 @@ public abstract class Auto extends LinearOpMode {
                         {0}
                 }),
                 new SimpleMatrix(new double[][]{
-                        {0, 0, 0, 0},
-                        {0, 0, 0, 0},
+                        {0.1, 0, 0, 0},
+                        {0, 0.1, 0, 0},
                         {0, 0, 0.1, 0},
-                        {0, 0, 0, 0.5}
+                        {0, 0, 0, 0.1}
                 }),
                 B);
         resetDeadWheels();
@@ -417,6 +436,8 @@ public abstract class Auto extends LinearOpMode {
         int z = (int) (2 * DEAD_WHEEL_TO_TICKS);
         DcMotorEx encX = shootR;
         DcMotorEx encY = intake;
+        int i = 1;
+        double powerSteps = 0.025;
         while (Math.abs(shootR.getCurrentPosition() - currentPosition) < ticksX) {
             double start = runtime.milliseconds();
 
@@ -426,18 +447,20 @@ public abstract class Auto extends LinearOpMode {
                     {ticksToInch(encX.getVelocity())},
                     {ticksToInch(encY.getVelocity())}
             });
-            SimpleMatrix U;
+
+            SimpleMatrix updatedEst;
             if (basicMathCalls.ticksToInch(encY.getVelocity()) < 35) {
-                U = new SimpleMatrix(new double[][]{
-                        {40}, {0}, {40}, {0}
+                u_u = new SimpleMatrix(new double[][]{
+                        {a_x}, {a_y}, {a_x}, {a_y}
                 });
+                updatedEst = robotKalmanFilter.update(z_k, u_u);
+
             } else {
-                U = new SimpleMatrix(new double[][]{
-                        {0}, {0}, {0}, {0}
-                });
+                updatedEst = robotKalmanFilter.update(z_k, u_0);
+
             }
 //            System.out.println(U.transpose());
-            SimpleMatrix updatedEst = robotKalmanFilter.update(z_k, U);
+
             SimpleMatrix currentPositionVector = new SimpleMatrix(new double[][]{
                     {ticksToInch(robotKalmanFilter.getXPosition())},
                     {ticksToInch(robotKalmanFilter.getYPosition())}
@@ -497,10 +520,11 @@ public abstract class Auto extends LinearOpMode {
 //                    rightFront.setPower(secondPower);
 //                    rightRear.setPower(power);
 //                }
-            leftFront.setPower(power);
-            leftRear.setPower(power);
-            rightRear.setPower(power);
-            rightFront.setPower(power);
+            leftFront.setPower(Range.clip(powerSteps * i, 0, power));
+            leftRear.setPower(Range.clip(powerSteps * i, 0, power));
+            rightRear.setPower(Range.clip(powerSteps * i, 0, power));
+            rightFront.setPower(Range.clip(powerSteps * i, 0, power));
+            i++;
             double end = runtime.milliseconds();
             double elapsedTime = end - start;
             System.out.println("elapsedTime = " + elapsedTime);
@@ -519,6 +543,8 @@ public abstract class Auto extends LinearOpMode {
 
     public void strafe(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
         pid.reset(this.runtime);
+        a_y = 40;
+        a_x = 0;
         resetDeadWheels();
         double theta = 0;
         SimpleMatrix B = new SimpleMatrix(new double[][]{
@@ -535,10 +561,10 @@ public abstract class Auto extends LinearOpMode {
                         {0}
                 }),
                 new SimpleMatrix(new double[][]{
-                        {0, 0, 0, 0},
-                        {0, 0, 0, 0},
+                        {0.1, 0, 0, 0},
+                        {0, 0.1, 0, 0},
                         {0, 0, 0.1, 0},
-                        {0, 0, 0, 0.5}
+                        {0, 0, 0, 0.1}
                 }),
                 B);
         resetDeadWheels();
@@ -566,18 +592,17 @@ public abstract class Auto extends LinearOpMode {
                     {ticksToInch(encX.getVelocity())},
                     {ticksToInch(encY.getVelocity())}
             });
-            SimpleMatrix U;
-            if (basicMathCalls.ticksToInch(encY.getVelocity()) > 35) {
-                U = new SimpleMatrix(new double[][]{
-                        {0}, {40}, {0}, {40}
+            SimpleMatrix updatedEst;
+            if (basicMathCalls.ticksToInch(encY.getVelocity()) < 35) {
+                u_u = new SimpleMatrix(new double[][]{
+                        {a_x}, {a_y}, {a_x}, {a_y}
                 });
-            } else {
-                U = new SimpleMatrix(new double[][]{
-                        {0}, {0}, {0}, {0}
-                });
-            }
+                updatedEst = robotKalmanFilter.update(z_k, u_u);
 
-            SimpleMatrix updatedEst = robotKalmanFilter.update(z_k, U);
+            } else {
+                updatedEst = robotKalmanFilter.update(z_k, u_0);
+
+            }
             SimpleMatrix currentPositionVector = new SimpleMatrix(new double[][]{
                     {ticksToInch(robotKalmanFilter.getXPosition())},
                     {ticksToInch(robotKalmanFilter.getYPosition())}
@@ -643,6 +668,8 @@ public abstract class Auto extends LinearOpMode {
             rightFront.setPower(-1 * power);
             double end = this.runtime.milliseconds();
             double elapsedTime = end - start;
+            double sleepTime = (50-elapsedTime);
+            sleep((long)sleepTime);
             System.out.println("elapsedTime = " + elapsedTime);
             System.out.println("z_k = " + z_k.transpose());
             System.out.println("updatedEst = " + updatedEst.transpose());
@@ -659,6 +686,8 @@ public abstract class Auto extends LinearOpMode {
 
     public void diagonalStrafe(double xDistance, double yDistance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
         pid.reset(this.runtime);
+        a_y = 40;
+        a_x = 40;
         resetDeadWheels();
         double theta = basicMathCalls.getAngleDegrees(xDistance, yDistance);
         SimpleMatrix B = new SimpleMatrix(new double[][]{
@@ -675,10 +704,10 @@ public abstract class Auto extends LinearOpMode {
                         {0}
                 }),
                 new SimpleMatrix(new double[][]{
-                        {0, 0, 0, 0},
-                        {0, 0, 0, 0},
+                        {0.1, 0, 0, 0},
+                        {0, 0.1, 0, 0},
                         {0, 0, 0.1, 0},
-                        {0, 0, 0, 0.5}
+                        {0, 0, 0, 0.1}
                 }),
                 B);
         resetDeadWheels();
@@ -728,18 +757,18 @@ public abstract class Auto extends LinearOpMode {
                     {ticksToInch(encX.getVelocity())},
                     {ticksToInch(encY.getVelocity())}
             });
-            SimpleMatrix U;
-            if (basicMathCalls.ticksToInch(encY.getVelocity()) > 35) {
-                U = new SimpleMatrix(new double[][]{
-                        {40}, {40}, {40}, {40}
+            SimpleMatrix updatedEst;
+            if (basicMathCalls.ticksToInch(encY.getVelocity()) < 35) {
+                u_u = new SimpleMatrix(new double[][]{
+                        {a_x}, {a_y}, {a_x}, {a_y}
                 });
+                updatedEst = robotKalmanFilter.update(z_k, u_u);
+
             } else {
-                U = new SimpleMatrix(new double[][]{
-                        {0}, {0}, {0}, {0}
-                });
+                updatedEst = robotKalmanFilter.update(z_k, u_0);
+
             }
 
-            SimpleMatrix updatedEst = robotKalmanFilter.update(z_k, U);
             SimpleMatrix currentPositionVector = new SimpleMatrix(new double[][]{
                     {ticksToInch(robotKalmanFilter.getXPosition())},
                     {ticksToInch(robotKalmanFilter.getYPosition())}
@@ -1414,23 +1443,24 @@ public abstract class Auto extends LinearOpMode {
     /**
      * shoots my shot
      *
-     * @param powerIntake  intake speed
      * @param powerShooter shooter speed
+     * @param powerIntake  intake speed
+     * @param waitTime
      * @throws InterruptedException
      */
-    public void shoot(double powerShooter, double powerIntake) throws InterruptedException {
+    public void shoot(double powerShooter, double powerIntake, double waitTime) throws InterruptedException {
         double startTime = runtime.time();
 //        turnOnShooter(powerShooter);
         turnOffEncoders();
         shootL.setPower(powerShooter);
         shootR.setPower(powerShooter);
 //        sleep(4000);
-        while (0.25 + startTime > runtime.time()) {
+        while (0.75 + startTime > runtime.time()) {
             heartbeat();
         }
         turnOnIntake(powerIntake);
 
-        while (3 + startTime > runtime.time()) {
+        while ((waitTime + 0.75) + startTime > runtime.time()) {
             heartbeat();
             System.out.println(shootL.getVelocity());
             System.out.println(shootR.getVelocity());
@@ -1604,12 +1634,14 @@ public abstract class Auto extends LinearOpMode {
         }
         feeder.setPower(0);
     }
-    public void turnOffEncoders(){
+
+    public void turnOffEncoders() {
         shootR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         shootL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
- public void turnOnEncoders(){
-     shootR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-     shootL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
- }
+
+    public void turnOnEncoders() {
+        shootR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shootL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
 }

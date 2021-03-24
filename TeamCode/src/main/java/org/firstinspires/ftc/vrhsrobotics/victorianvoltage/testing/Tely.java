@@ -5,9 +5,11 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.helper.PositionTracker;
 
 import static android.os.SystemClock.sleep;
@@ -17,6 +19,7 @@ public class Tely extends OpMode {
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, feeder;
     private Servo arm, hook;
+    private DistanceSensor ringCheck;
     private boolean precision, direction, precisionChanged, directionChanged;
     private boolean useOneGamepad;
     private boolean positionChanged = false;
@@ -34,6 +37,7 @@ public class Tely extends OpMode {
     private boolean intakeSeparate;
     private boolean feederSeparate;
 
+
     @Override
     public void init() {
         //after driver hits init
@@ -41,6 +45,7 @@ public class Tely extends OpMode {
         setUpIntake();
         setUpShoot();
         setUpServos();
+        setUpSensors();
 
         precision = false;
         direction = false;
@@ -59,6 +64,10 @@ public class Tely extends OpMode {
         baseParallelLeftPosition = shootL.getCurrentPosition();
         baseParallelRightPosition = shootR.getCurrentPosition();
         basePerpendicularPosition = intake.getCurrentPosition();
+    }
+
+    private void setUpSensors() {
+        ringCheck = hardwareMap.get(DistanceSensor.class, "ringCheck");
     }
 
     public void setUpDriveTrain() {
@@ -134,8 +143,8 @@ public class Tely extends OpMode {
         gripWobble();
         moveArm();
         useEncoders();
-
-
+//        separate();
+        System.out.println(ringCheck.getDistance(DistanceUnit.CM));
     }
 
     public void useEncoders() {
@@ -229,13 +238,17 @@ public class Tely extends OpMode {
     }
 
     public void intake() {
-//        if (gamepad2.left_trigger > 0.85) {
-//            intake.setPower(1);
-//            feeder.setPower(1);
-//        } else
-        if (gamepad2.right_bumper) {
+        if (gamepad2.left_trigger > 0.85) {
             intake.setPower(1);
             feeder.setPower(1);
+        } else if (gamepad2.right_bumper) {
+            if (ringCheck.getDistance(DistanceUnit.CM) > 7) {
+                intake.setPower(1);
+                feeder.setPower(1);
+            } else {
+                feeder.setPower(1);
+                intake.setPower(0);
+            }
         } else if (gamepad2.left_bumper) {
             intake.setPower(-1);
             feeder.setPower(-1);

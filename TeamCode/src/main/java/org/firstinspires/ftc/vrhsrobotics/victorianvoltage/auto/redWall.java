@@ -97,11 +97,10 @@ public class redWall extends Auto {
                     dropWobble();
                     strafeByDeadWheels(8, 0.5, true, 0, runtime);
                     moveByDeadWheels(18, -0.5, 0, runtime);
-                    //strafeByDeadWheels(30, 0.5, true, 0, runtime);
-                    powerShot(runtime);
-
-//                    moveByDeadWheels(8, 0.5, 0, runtime);
-
+                    shoot(1, 1, 4);
+//                    strafeByDeadWheels(30, 0.5, true, 0, runtime);
+//                    powerShot(runtime);
+                    moveByDeadWheels(8, 0.5, 0, runtime);
 //                    move(63, 0, 1, 0, runtime);
 
                     break;
@@ -124,9 +123,9 @@ public class redWall extends Auto {
 
         turnOffEncoders();
         strafeByDeadWheels(3, 0.5, true, 0, runtime);
-        shoot(0.8, 1);
+        shoot(0.8, 1, 1);
         strafeByDeadWheels(3, 0.5, true, 0, runtime);
-        shoot(0.8, 1);
+        shoot(0.8, 1, 1);
         strafeByDeadWheels(3, 0.5, true, 0, runtime);
         turnOnEncoders();
     }
