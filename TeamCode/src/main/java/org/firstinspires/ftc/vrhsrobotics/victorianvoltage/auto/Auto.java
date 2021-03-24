@@ -1455,12 +1455,12 @@ public abstract class Auto extends LinearOpMode {
         shootL.setPower(powerShooter);
         shootR.setPower(powerShooter);
 //        sleep(4000);
-        while (0.75 + startTime > runtime.time()) {
+        while (1 + startTime > runtime.time()) {
             heartbeat();
         }
         turnOnIntake(powerIntake);
 
-        while ((waitTime + 0.75) + startTime > runtime.time()) {
+        while ((waitTime + 1) + startTime > runtime.time()) {
             heartbeat();
             System.out.println(shootL.getVelocity());
             System.out.println(shootR.getVelocity());

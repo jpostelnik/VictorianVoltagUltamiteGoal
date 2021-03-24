@@ -82,11 +82,11 @@ public class redWall extends Auto {
                     System.out.println("a");
                     telemetry.addLine("a");
                     telemetry.update();
-                    strafeByDeadWheels(4, 0.2, false, 0, runtime);
+//                    strafeByDeadWheels(4, 0.2, false, 0, runtime);
                     moveByDeadWheels(63, 0.7, 0, runtime);
                     dropWobble();
                     strafeByDeadWheels(39, 0.5, true, 0, runtime);
-                    moveByDeadWheels(44, -0.7, 0, runtime);
+                    moveByDeadWheels(43, -0.7, 0, runtime);
                     lowerWobble();
                     sleep(1000);
                     strafeByDeadWheels(3, 0.3, false, 0, runtime);
@@ -96,11 +96,11 @@ public class redWall extends Auto {
                     strafeByDeadWheels(34, 0.5, false, 0, runtime);
                     dropWobble();
                     strafeByDeadWheels(8, 0.5, true, 0, runtime);
-                    moveByDeadWheels(18, -0.5, 0, runtime);
-                    shoot(1, 1, 4);
+              moveByDeadWheels(8, -0.5, 0, runtime);
+//                    shoot(1, 1, 4);
 //                    strafeByDeadWheels(30, 0.5, true, 0, runtime);
-//                    powerShot(runtime);
-                    moveByDeadWheels(8, 0.5, 0, runtime);
+                powerShot(runtime);
+                 //   moveByDeadWheels(8, 0.5, 0, runtime);
 //                    move(63, 0, 1, 0, runtime);
 
                     break;
@@ -122,11 +122,12 @@ public class redWall extends Auto {
     public void powerShot(ElapsedTime runtime) throws InterruptedException {
 
         turnOffEncoders();
-        strafeByDeadWheels(3, 0.5, true, 0, runtime);
-        shoot(0.8, 1, 1);
-        strafeByDeadWheels(3, 0.5, true, 0, runtime);
-        shoot(0.8, 1, 1);
-        strafeByDeadWheels(3, 0.5, true, 0, runtime);
+        strafeByDeadWheels(9, 0.5, true, 0, runtime);
+        shoot(0.8, 1, 0.25);
+        strafeByDeadWheels(4, 0.5, true, 0, runtime);
+        shoot(0.8, 1, 0.35);
+        strafeByDeadWheels(4, 0.5, true, 0, runtime);
+        shoot(0.8,1,0.25);  +
         turnOnEncoders();
     }
 }
