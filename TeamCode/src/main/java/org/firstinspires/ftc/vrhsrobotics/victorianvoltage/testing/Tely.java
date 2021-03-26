@@ -242,7 +242,7 @@ public class Tely extends OpMode {
             intake.setPower(1);
             feeder.setPower(1);
         } else if (gamepad2.right_bumper) {
-            if (ringCheck.getDistance(DistanceUnit.CM) > 7) {
+            if (ringCheck.getDistance(DistanceUnit.CM) > 2.5) {
                 intake.setPower(1);
                 feeder.setPower(1);
             } else {

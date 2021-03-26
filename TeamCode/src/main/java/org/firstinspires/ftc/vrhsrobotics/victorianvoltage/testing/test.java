@@ -29,7 +29,7 @@ public class test extends Auto {
         restRuntime();
 
         try {
-            move(60,1,0,runtime);
+            strafe(5, 1, 0, runtime);
             sleep(10000);
         } catch (InterruptedException e) {
             e.printStackTrace();
