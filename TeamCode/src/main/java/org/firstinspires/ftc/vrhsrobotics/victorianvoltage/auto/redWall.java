@@ -32,23 +32,23 @@ public class redWall extends Auto {
                     telemetry.addLine("b");
                     telemetry.update();
                     strafeByDeadWheels(4, 0.2, false, 0, runtime);
-                    move(90, 0.7, 0, runtime);
+                    moveByDeadWheels(90, 0.7, 0, runtime);
                     strafeByDeadWheels(25, 0.4, true, 0, runtime);
 
 //                    turningPID(180, 0.4, runtime);
                     dropWobble();
                     strafeByDeadWheels(20, 0.4, true, 0, runtime);
-                    move(65, -0.7, 0, runtime);
+                    moveByDeadWheels(65, -0.7, 0, runtime);
 
                     lowerWobble();
                     sleep(1000);
                     strafeByDeadWheels(3, 0.3, false, 0, runtime);
                     raiseWobble();
                     sleep(1000);
-                    move(71, 0.7, 0, runtime);
+                    moveByDeadWheels(71, 0.7, 0, runtime);
                     strafeByDeadWheels(10, 0.6, false, 0, runtime);
                     dropWobble();
-                    move(15, -0.7, 0, runtime);
+                    moveByDeadWheels(15, -0.7, 0, runtime);
                     // strafeByDeadWheels(5, 0.6, true, 0, runtime);
                     // shoot(0.8, 1);
                     break;
@@ -56,24 +56,24 @@ public class redWall extends Auto {
                     System.out.println("c");
                     telemetry.addLine("c");
                     telemetry.update();
-                    strafeByDeadWheels(4, 0.3, false, 0, runtime);
-                    move(110, 0.8, 0, runtime);
+                    strafeByDeadWheels(6, 0.3, false, 0, runtime);
+                    moveByDeadWheels(110, 0.8, 0, runtime);
 //                    strafeByDeadWheels(5, 0.3, true, 0, runtime);
 
                     dropWobble();
 
                     strafeByDeadWheels(41, 0.3, true, 0, runtime);
-                    move(87, -0.8, 0, runtime);
+                    moveByDeadWheels(87, -0.8, 0, runtime);
 
                     lowerWobble();
                     sleep(1000);
                     strafeByDeadWheels(3, 0.3, false, 0, runtime);
                     raiseWobble();
                     sleep(1000);
-                    move(96, 0.8, 0, runtime);
+                    moveByDeadWheels(96, 0.8, 0, runtime);
                     strafeByDeadWheels(30, 0.3, false, 0, runtime);
                     dropWobble();
-                    move(30, -0.8, 0, runtime);
+                    moveByDeadWheels(30, -0.8, 0, runtime);
                     //strafeByDeadWheels(5, 0.6, true, 0, runtime);
                     //shoot(0.8, 1);
                     break;
@@ -82,30 +82,38 @@ public class redWall extends Auto {
                     System.out.println("a");
                     telemetry.addLine("a");
                     telemetry.update();
-//                    strafeByDeadWheels(4, 0.2, false, 0, runtime);
-                    move(63, 0.7, 0, runtime);
+                   strafeByDeadWheels(4, 0.2, false, 0, runtime);
+                    moveByDeadWheels(63, 0.7, 0, runtime);
                     dropWobble();
                     strafeByDeadWheels(39, 0.5, true, 0, runtime);
-                    move(43, -0.7, 0, runtime);
+                    moveByDeadWheels(44, -0.7, 0, runtime);
                     lowerWobble();
                     sleep(1000);
                     strafeByDeadWheels(3, 0.3, false, 0, runtime);
                     raiseWobble();
                     sleep(1000);
-                    move(57, 0.7, 0, runtime);
-                    strafeByDeadWheels(34, 0.5, false, 0, runtime);
+                    moveByDeadWheels(59, 0.7, 0, runtime);
+                    strafeByDeadWheels(30, 0.5, false, 0, runtime);
                     dropWobble();
                     strafeByDeadWheels(8, 0.5, true, 0, runtime);
-              move(8, -0.5, 0, runtime);
-//                    shoot(1, 1, 4);
+              moveByDeadWheels(10, -0.5, 0, runtime);
+                    shoot(0.8, 1, 0.25);
+                    //                    shoot(1, 1, 4);
 //                    strafeByDeadWheels(30, 0.5, true, 0, runtime);
               //  powerShot(runtime);
-                 //   move(8, 0.5, 0, runtime);
+                 //   moveByDeadWheels(8, 0.5, 0, runtime);
 //                    move(63, 0, 1, 0, runtime);
-                    move(20, -0.8, 0, runtime);
-                    strafeByDeadWheels(4, 0.5, true, 0, runtime);
-                    move(3, -0.8, 0, runtime);
-                    shoot(.8, 1, 4);
+                    // moveByDeadWheels(20, -0.8, 0, runtime);
+
+                    strafeByDeadWheels(1, 0.5, true, 0, runtime);
+                    sleep(1000);
+                    moveByDeadWheels(3.5, -0.8, 0, runtime);
+
+                    shoot(0.8, 1, 0.25);
+                    shoot(0.8, 1, 0.25);
+                    shoot(0.8, 1, 0.25);
+                    shoot(0.8, 1, 0.25);
+
                     break;
                 //todo: will be what is in 0. So might remove it.
             }
