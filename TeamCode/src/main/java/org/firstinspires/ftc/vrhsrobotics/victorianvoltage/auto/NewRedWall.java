@@ -25,7 +25,7 @@ public class NewRedWall extends Auto {
             //TODO:: Get one and four to work
             //TODO:: try not to cry
 
-            location = SkystoneDeterminationPipeline.RingPosition.NONE;
+      //      location = SkystoneDeterminationPipeline.RingPosition.NONE;
             switch (location) {
                 case ONE:
                     System.out.println("b");
