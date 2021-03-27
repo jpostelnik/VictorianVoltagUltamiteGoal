@@ -64,9 +64,9 @@ public abstract class Auto extends LinearOpMode {
 
 
     //pids
-    private PIDController pid = new PIDController(runtime, 0.8, 0, 0.2);
+    private PIDController pid = new PIDController(runtime, 0.04, 0, 0.0024);
     private PIDController pidTurning = new PIDController(runtime, 1, 0, 0);
-    private PIDController pidStrafe = new PIDController(runtime, 0.08, 0, 0);
+    private PIDController pidStrafe = new PIDController(runtime, 0.04, 0, 0.004);
     private PIDController pidDiagonal = new PIDController(runtime, 0.01, 0, 0);
     private PIDController pidPositional = new PIDController(runtime, 0.7, 0.1, 0);
 
@@ -437,7 +437,19 @@ public abstract class Auto extends LinearOpMode {
         DcMotorEx encX = shootR;
         DcMotorEx encY = intake;
         int i = 1;
-        double powerSteps = 0.025;
+        double powerSteps;
+        if (power < -1) {
+            powerSteps = -0.025;
+
+        } else {
+            powerSteps = 0.025;
+
+        }
+        power = Math.abs(power);
+        leftFront.setPower(Range.clip(powerSteps * i, 0, power));
+            leftRear.setPower(Range.clip(powerSteps * i, 0, power));
+        rightRear.setPower(Range.clip(powerSteps * i, 0, power));
+        rightFront.setPower(Range.clip(powerSteps * i, 0, power));
         while (Math.abs(shootR.getCurrentPosition() - currentPosition) < ticksX) {
             double start = runtime.milliseconds();
 
@@ -520,10 +532,12 @@ public abstract class Auto extends LinearOpMode {
 //                    rightFront.setPower(secondPower);
 //                    rightRear.setPower(power);
 //                }
-            leftFront.setPower(Range.clip(powerSteps * i, 0, power));
-            leftRear.setPower(Range.clip(powerSteps * i, 0, power));
-            rightRear.setPower(Range.clip(powerSteps * i, 0, power));
-            rightFront.setPower(Range.clip(powerSteps * i, 0, power));
+            correction(Range.clip(powerSteps * i, -power, power), heading, "straight", false, 1);
+
+//            leftFront.setPower(Range.clip(powerSteps * i, 0, power));
+//            leftRear.setPower(Range.clip(powerSteps * i, 0, power));
+//            rightRear.setPower(Range.clip(powerSteps * i, 0, power));
+//            rightFront.setPower(Range.clip(powerSteps * i, 0, power));
             i++;
             double end = runtime.milliseconds();
             double elapsedTime = end - start;
@@ -541,7 +555,7 @@ public abstract class Auto extends LinearOpMode {
         halt();
     }
 
-    public void strafe(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
+    public void strafe(double distance, double power, boolean left, int heading, ElapsedTime runtime) throws InterruptedException {
         pid.reset(this.runtime);
         a_y = 40;
         a_x = 0;
@@ -583,6 +597,30 @@ public abstract class Auto extends LinearOpMode {
         int z = (int) (2 * DEAD_WHEEL_TO_TICKS);
         DcMotorEx encX = shootR;
         DcMotorEx encY = intake;
+
+        int i = 1;
+        double powerSteps;
+        if (power < -1) {
+            powerSteps = -0.025;
+
+        } else {
+            powerSteps = 0.025;
+
+        }
+        power = Math.abs(power);
+        if (left) {
+            leftRear.setPower(1 * powerSteps);
+            leftFront.setPower(-1 * powerSteps);
+            rightRear.setPower(-1 * powerSteps);
+            rightFront.setPower(1 * powerSteps);
+//            direction = "right";
+        } else {
+            leftRear.setPower(-1 * powerSteps);
+            leftFront.setPower(1 * powerSteps);
+            rightRear.setPower(1 * powerSteps);
+            rightFront.setPower(-1 * powerSteps);
+//            direction = "left";
+        }
         while (Math.abs(intake.getCurrentPosition() - currentPosition) < ticksY) {
             double start = this.runtime.milliseconds();
 
@@ -662,14 +700,21 @@ public abstract class Auto extends LinearOpMode {
 //                    rightFront.setPower(secondPower);
 //                    rightRear.setPower(power);
 //                }
-            leftRear.setPower(-1 * power);
-            leftFront.setPower(1 * power);
-            rightRear.setPower(1 * power);
-            rightFront.setPower(-1 * power);
+
+            if (left) {
+                correction(Range.clip(powerSteps * i, -power, power), heading, "strafe left", false, 1);
+            } else {
+                correction(Range.clip(powerSteps * i, -power, power), heading, "strafe right", false, 1);
+
+            }
+//            leftRear.setPower(-1 * power);
+//            leftFront.setPower(1 * power);
+//            rightRear.setPower(1 * power);
+//            rightFront.setPower(-1 * power);
             double end = this.runtime.milliseconds();
             double elapsedTime = end - start;
-            double sleepTime = (50-elapsedTime);
-            sleep((long)sleepTime);
+            double sleepTime = (50 - elapsedTime);
+//            sleep((long) sleepTime);
             System.out.println("elapsedTime = " + elapsedTime);
             System.out.println("z_k = " + z_k.transpose());
             System.out.println("updatedEst = " + updatedEst.transpose());

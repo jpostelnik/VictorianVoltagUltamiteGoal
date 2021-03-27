@@ -29,7 +29,8 @@ public class test extends Auto {
         restRuntime();
 
         try {
-            strafe(5, 1, 0, runtime);
+//            strafeByDeadWheels(5, 1, false,0 , runtime);
+            strafe(5, 1, false, 0, runtime);
             sleep(10000);
         } catch (InterruptedException e) {
             e.printStackTrace();
