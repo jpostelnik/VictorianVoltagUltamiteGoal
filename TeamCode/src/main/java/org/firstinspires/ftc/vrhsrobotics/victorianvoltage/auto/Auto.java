@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -16,7 +17,10 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.exceptions.DoomException;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.exceptions.HeartBeatException;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.MotionProfiling.MotionProfiler;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.basicMathCalls;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.KalmanFilter;
@@ -59,12 +63,12 @@ public abstract class Auto extends LinearOpMode {
     private ElapsedTime runtime = new ElapsedTime();
 
     private DcMotorEx[] driveTrain;
-
+    private DistanceSensor rightFrontDistance,leftFrontDistance;
     private MotionProfiler motionProfiler;
 
 
     //pids
-    private PIDController pid = new PIDController(runtime, 0.04, 0, 0.0024);
+    private PIDController pid = new PIDController(runtime, 0.0004, 0, 0.0024);
     private PIDController pidTurning = new PIDController(runtime, 1, 0, 0);
     private PIDController pidStrafe = new PIDController(runtime, 0.04, 0, 0.004);
     private PIDController pidDiagonal = new PIDController(runtime, 0.01, 0, 0);
@@ -75,7 +79,7 @@ public abstract class Auto extends LinearOpMode {
     protected SkystoneDeterminationPipeline pipeline;
 
     //KalmanFilter Filter
-    // 10 updates per second
+    //updates ever 50 miliseconds
     double dt = 0.05;
     SimpleMatrix f = new SimpleMatrix(new double[][]{
             {1, 0, dt, 0},
@@ -85,21 +89,20 @@ public abstract class Auto extends LinearOpMode {
     }
     );
 
-
     SimpleMatrix G = new SimpleMatrix(new double[][]{
-            {0.5 * Math.pow(dt, 2)},
-            {0.5 * Math.pow(dt, 2)},
+            {0.5 * dt * dt},
+            {0.5 * dt * dt},
             {dt},
             {dt}
     });
 
-    double sigma_a = 0.05;
+    double sigma_a = 0.005;
     SimpleMatrix Q = G.mult(G.transpose()).scale(sigma_a * sigma_a);
 
     SimpleMatrix H = SimpleMatrix.identity(f.numRows());
 
-    double positionVar = 0.5;
-    double velocityVar = 0.1;
+    double positionVar = 0.005;
+    double velocityVar = 0.001;
 
     SimpleMatrix R = new SimpleMatrix(new double[][]{
             {positionVar, 0, 0, 0},
@@ -109,8 +112,8 @@ public abstract class Auto extends LinearOpMode {
     });
 
 
-    double a_x = 40;
-    double a_y = 0;
+    double a_x = 20;
+    double a_y = 20;
 
     SimpleMatrix u_u = new SimpleMatrix(new double[][]{
             {a_x},
@@ -132,11 +135,11 @@ public abstract class Auto extends LinearOpMode {
     /**
      * checks if opmode is still running
      *
-     * @throws InterruptedException
+     * @throws HeartBeatException
      */
-    private void heartbeat() throws InterruptedException {
+    private void heartbeat() throws HeartBeatException {
         if (!opModeIsActive()) {
-            throw new InterruptedException();
+            throw new HeartBeatException();
         }
     }
 
@@ -328,11 +331,11 @@ public abstract class Auto extends LinearOpMode {
      * @param distance distance in inches that the robot move
      * @param power    it is how fast the robot moves
      * @param heading  the target heading for the front of the robot
-     * @throws InterruptedException if op mod is not running then it stops
-     *                              oof
+     * @throws HeartBeatException if op mod is not running then it stops
+     *                            oof
      */
     @Deprecated
-    public void moveOld(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
+    public void moveOld(double distance, double power, int heading, ElapsedTime runtime) throws HeartBeatException {
         resetMotors();
         pid.reset(runtime);
         double deadWheelStart = -1 * shootR.getCurrentPosition();
@@ -375,9 +378,9 @@ public abstract class Auto extends LinearOpMode {
      * @param power
      * @param heading
      * @param runtime
-     * @throws InterruptedException
+     * @throws HeartBeatException
      */
-    public void moveByDeadWheels(double distance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
+    public void moveByDeadWheels(double distance, double power, int heading, ElapsedTime runtime) throws HeartBeatException {
         pid.reset(runtime);
         resetDeadWheels();
         double currentPosition = shootR.getCurrentPosition();
@@ -394,17 +397,16 @@ public abstract class Auto extends LinearOpMode {
     }
 
 
-    public void move(double distanceX, double power, int heading, ElapsedTime runtime) throws InterruptedException {
+    public void move(double distanceX, double power, int heading, ElapsedTime runtime) throws HeartBeatException {
+//        System.out.println(Q);
         pid.reset(runtime);
-        a_x = 40;
-        a_y = 0;
         resetDeadWheels();
         double theta = Math.PI / 2;
         SimpleMatrix B = new SimpleMatrix(new double[][]{
-                {dt * dt / 2 * Math.sin(theta), 0, 0, 0},
-                {0, dt * dt / 2 * Math.cos(theta), 0, 0},
-                {0, 0, dt * dt / 2 * Math.sin(theta), 0},
-                {0, 0, 0, dt * dt / 2 * Math.cos(theta)}
+                {dt * dt / 2 * Math.cos(theta), 0, 0, 0},
+                {0, dt * dt / 2 * Math.sin(theta), 0, 0},
+                {0, 0, dt * dt / 2 * Math.cos(theta), 0},
+                {0, 0, 0, dt * dt / 2 * Math.sin(theta)}
 
         });
 //        System.out.println(B.transpose());
@@ -425,9 +427,7 @@ public abstract class Auto extends LinearOpMode {
         double currentPosition = shootR.getCurrentPosition();
         int ticksX = basicMathCalls.getDeadWheelTicks(distanceX);
         int ticksY = basicMathCalls.getDeadWheelTicks(0);
-        for (DcMotorEx motors : driveTrain) {
-            motors.setPower(power);
-        }
+
         SimpleMatrix targetVector = new SimpleMatrix(new double[][]{
                 {distanceX},
                 {0}
@@ -438,134 +438,86 @@ public abstract class Auto extends LinearOpMode {
         DcMotorEx encY = intake;
         int i = 1;
         double powerSteps;
-        if (power < -1) {
-            powerSteps = -0.025;
-
-        } else {
+        if (power > 0) {
             powerSteps = 0.025;
-
+        } else {
+            powerSteps = -0.025;
         }
-        power = Math.abs(power);
-        leftFront.setPower(Range.clip(powerSteps * i, 0, power));
-            leftRear.setPower(Range.clip(powerSteps * i, 0, power));
-        rightRear.setPower(Range.clip(powerSteps * i, 0, power));
-        rightFront.setPower(Range.clip(powerSteps * i, 0, power));
+
+        leftFront.setPower(Range.clip(powerSteps * i, -1, 1));
+        leftRear.setPower(Range.clip(powerSteps * i, -1, 1));
+        rightRear.setPower(Range.clip(powerSteps * i, -1, 1));
+        rightFront.setPower(Range.clip(powerSteps * i, -1, 1));
+
         while (Math.abs(shootR.getCurrentPosition() - currentPosition) < ticksX) {
-            double start = runtime.milliseconds();
+            try {
+                double start = runtime.milliseconds();
 
-            SimpleMatrix z_k = new SimpleMatrix(new double[][]{
-                    {ticksToInch(encX.getCurrentPosition())},
-                    {ticksToInch(encY.getCurrentPosition())},
-                    {ticksToInch(encX.getVelocity())},
-                    {ticksToInch(encY.getVelocity())}
-            });
-
-            SimpleMatrix updatedEst;
-            if (basicMathCalls.ticksToInch(encY.getVelocity()) < 35) {
-                u_u = new SimpleMatrix(new double[][]{
-                        {a_x}, {a_y}, {a_x}, {a_y}
+                SimpleMatrix z_k = new SimpleMatrix(new double[][]{
+                        {ticksToInch(encX.getCurrentPosition())},
+                        {ticksToInch(encY.getCurrentPosition())},
+                        {ticksToInch(encX.getVelocity())},
+                        {ticksToInch(encY.getVelocity())}
                 });
-                updatedEst = robotKalmanFilter.update(z_k, u_u);
 
-            } else {
-                updatedEst = robotKalmanFilter.update(z_k, u_0);
+                SimpleMatrix Vvector = new SimpleMatrix(new double[][]{
+                        {ticksToInch(encX.getVelocity())},
+                        {ticksToInch(encY.getVelocity())}
+                });
+                SimpleMatrix updatedEst;
+                double v = Vvector.dot((Vvector.transpose()));
+                if (basicMathCalls.ticksToInch(v) < 5000) {
+                    updatedEst = robotKalmanFilter.update(z_k, u_u);
+
+                } else {
+                    updatedEst = robotKalmanFilter.update(z_k, u_0);
+
+                }
+                SimpleMatrix currentPositionVector = new SimpleMatrix(new double[][]{
+                        {ticksToInch(robotKalmanFilter.getXPosition())},
+                        {ticksToInch(robotKalmanFilter.getYPosition())}
+                });
+
+                SimpleMatrix errorVector = targetVector.minus(currentPositionVector);
+                errorMagnitude = Math.sqrt(Math.pow(errorVector.get(0, 0), 2) + Math.pow(errorVector.get(0, 0), 2));
+                leftFront.setPower(Range.clip(powerSteps * i, -1, 1));
+                leftRear.setPower(Range.clip(powerSteps * i, -1, 1));
+                rightRear.setPower(Range.clip(powerSteps * i, -1, 1));
+                rightFront.setPower(Range.clip(powerSteps * i, -1, 1));
+                i++;
+                double end = runtime.milliseconds();
+                double elapsedTime = end - start;
+                long dif = (long) (50 - elapsedTime);
+                telemetry.addData("dif= ", dif);
+                telemetry.update();
+                if (dif < 50 && dif > 0)
+                    sleep(dif);
+                System.out.println("elapsedTime = " + elapsedTime);
+                System.out.println("z_k = " + z_k.transpose());
+                System.out.println("updatedEst = " + updatedEst.transpose());
+                telemetry.update();
+
+                //saftey checks
+                heartbeat();
+                doom(leftFrontDistance.getDistance(DistanceUnit.CM)<4||rightFrontDistance.getDistance(DistanceUnit.CM)<4);
 
             }
-//            System.out.println(U.transpose());
-
-            SimpleMatrix currentPositionVector = new SimpleMatrix(new double[][]{
-                    {ticksToInch(robotKalmanFilter.getXPosition())},
-                    {ticksToInch(robotKalmanFilter.getYPosition())}
-            });
-
-            SimpleMatrix errorVector = targetVector.minus(currentPositionVector);
-            errorMagnitude = Math.sqrt(Math.pow(errorVector.get(0, 0), 2) + Math.pow(errorVector.get(0, 0), 2));
-            double correction = pidPositional.correction(errorMagnitude, runtime);
-//            double degrees = basicMathCalls.getAngleDegrees(errorVector.get(0), errorVector.get(0));
-//            double secondPower = basicMathCalls.getSecondPower(degrees, power);
-//            if (correction > 4000) {
-////                correction(power, heading, "straight", false, 1);
-//
-//            } else {
-//                power *= correction / 4000;
-//                secondPower = basicMathCalls.getSecondPower(degrees, power);
-////                correction(power, heading, "straight", false, 1);
-//
-////
-//            if(distanceY == 0){
-//                if(distanceX>0) {
-//                    leftFront.setPower(power);
-//                    leftRear.setPower(power);
-//                    rightRear.setPower(power);
-//                    rightFront.setPower(power);
-//                }else{
-//                    leftFront.setPower(-power);
-//                    leftRear.setPower(-power);
-//                    rightRear.setPower(-power);
-//                    rightFront.setPower(-power);
-//                }
-//            }
-//            else
-//                if (degrees == 90) {
-//                    leftFront.setPower(power);
-//                    leftRear.setPower(-power);
-//                    rightRear.setPower(power);
-//                    rightFront.setPower(-power);
-//                } else if (degrees == -90) {
-//                    leftFront.setPower(-power);
-//                    leftRear.setPower(power);
-//                    rightRear.setPower(-power);
-//                    rightFront.setPower(power);
-//                } else if (degrees < 90 && degrees > -90) {
-////                telemetry.addLine("right");
-////                telemetry.update();
-//                    leftFront.setPower(secondPower);
-//                    leftRear.setPower(power);
-//                    rightFront.setPower(power);
-//                    rightRear.setPower(secondPower);
-//                } else {
-////                inv = true;
-////                telemetry.addLine("left");
-////                telemetry.update();
-//                    leftFront.setPower(power);
-//                    leftRear.setPower(secondPower);
-//                    rightFront.setPower(secondPower);
-//                    rightRear.setPower(power);
-//                }
-            correction(Range.clip(powerSteps * i, -power, power), heading, "straight", false, 1);
-
-//            leftFront.setPower(Range.clip(powerSteps * i, 0, power));
-//            leftRear.setPower(Range.clip(powerSteps * i, 0, power));
-//            rightRear.setPower(Range.clip(powerSteps * i, 0, power));
-//            rightFront.setPower(Range.clip(powerSteps * i, 0, power));
-            i++;
-            double end = runtime.milliseconds();
-            double elapsedTime = end - start;
-            System.out.println("elapsedTime = " + elapsedTime);
-            System.out.println("z_k = " + z_k.transpose());
-            System.out.println("updatedEst = " + updatedEst.transpose());
-//            telemetry.addData("current", currentPositionVector);
-//            System.out.println("CurrentVector = "+currentPositionVector.transpose());
-//            telemetry.addData("errorVector", errorVector);
-//            System.out.println("Error vector = "+errorVector.transpose());
-
-            telemetry.update();
-            heartbeat();
+            catch (DoomException e){
+                break;
+            }
         }
         halt();
     }
 
-    public void strafe(double distance, double power, boolean left, int heading, ElapsedTime runtime) throws InterruptedException {
+    public void strafe(double distance, double power, boolean left, int heading, ElapsedTime runtime) throws HeartBeatException {
         pid.reset(this.runtime);
-        a_y = 40;
-        a_x = 0;
         resetDeadWheels();
         double theta = 0;
         SimpleMatrix B = new SimpleMatrix(new double[][]{
-                {dt * dt / 2 * Math.sin(theta), 0, 0, 0},
-                {0, dt * dt / 2 * Math.cos(theta), 0, 0},
-                {0, 0, dt * dt / 2 * Math.sin(theta), 0},
-                {0, 0, 0, dt * dt / 2 * Math.cos(theta)}
+                {dt * dt / 2 * Math.cos(theta), 0, 0, 0},
+                {0, dt * dt / 2 * Math.sin(theta), 0, 0},
+                {0, 0, dt * dt / 2 * Math.cos(theta), 0},
+                {0, 0, 0, dt * dt / 2 * Math.sin(theta)}
 
         });
         robotKalmanFilter.setInitalPostion(new SimpleMatrix(new double[][]{
@@ -632,9 +584,6 @@ public abstract class Auto extends LinearOpMode {
             });
             SimpleMatrix updatedEst;
             if (basicMathCalls.ticksToInch(encY.getVelocity()) < 35) {
-                u_u = new SimpleMatrix(new double[][]{
-                        {a_x}, {a_y}, {a_x}, {a_y}
-                });
                 updatedEst = robotKalmanFilter.update(z_k, u_u);
 
             } else {
@@ -729,17 +678,15 @@ public abstract class Auto extends LinearOpMode {
         halt();
     }
 
-    public void diagonalStrafe(double xDistance, double yDistance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
+    public void diagonalStrafe(double xDistance, double yDistance, double power, int heading, ElapsedTime runtime) throws HeartBeatException {
         pid.reset(this.runtime);
-        a_y = 40;
-        a_x = 40;
         resetDeadWheels();
         double theta = basicMathCalls.getAngleDegrees(xDistance, yDistance);
         SimpleMatrix B = new SimpleMatrix(new double[][]{
-                {dt * dt / 2 * Math.sin(theta), 0, 0, 0},
-                {0, dt * dt / 2 * Math.cos(theta), 0, 0},
-                {0, 0, dt * dt / 2 * Math.sin(theta), 0},
-                {0, 0, 0, dt * dt / 2 * Math.cos(theta)}
+                {dt * dt / 2 * Math.cos(theta), 0, 0, 0},
+                {0, dt * dt / 2 * Math.sin(theta), 0, 0},
+                {0, 0, dt * dt / 2 * Math.cos(theta), 0},
+                {0, 0, 0, dt * dt / 2 * Math.sin(theta)}
 
         });
         robotKalmanFilter.setInitalPostion(new SimpleMatrix(new double[][]{
@@ -804,9 +751,6 @@ public abstract class Auto extends LinearOpMode {
             });
             SimpleMatrix updatedEst;
             if (basicMathCalls.ticksToInch(encY.getVelocity()) < 35) {
-                u_u = new SimpleMatrix(new double[][]{
-                        {a_x}, {a_y}, {a_x}, {a_y}
-                });
                 updatedEst = robotKalmanFilter.update(z_k, u_u);
 
             } else {
@@ -920,9 +864,9 @@ public abstract class Auto extends LinearOpMode {
      * @param left
      * @param heading
      * @param runtime
-     * @throws InterruptedException
+     * @throws HeartBeatException
      */
-    public void strafeByDeadWheels(double distance, double power, boolean left, int heading, ElapsedTime runtime) throws InterruptedException {
+    public void strafeByDeadWheels(double distance, double power, boolean left, int heading, ElapsedTime runtime) throws HeartBeatException {
         resetMotors();
         resetDeadWheels();
         pidStrafe.reset(runtime);
@@ -955,10 +899,10 @@ public abstract class Auto extends LinearOpMode {
      * @param time
      * @param power
      * @param runtime
-     * @throws InterruptedException
+     * @throws HeartBeatException
      */
     @Deprecated
-    protected void moveByTime(double time, double power, ElapsedTime runtime) throws InterruptedException {
+    protected void moveByTime(double time, double power, ElapsedTime runtime) throws HeartBeatException {
         resetMotors();
         double statingPosition = leftRear.getCurrentPosition();
 
@@ -991,11 +935,11 @@ public abstract class Auto extends LinearOpMode {
      * @param distance where i want to go
      * @param power    the speed
      * @param right    direction
-     * @throws InterruptedException
+     * @throws HeartBeatException
      * @deprecated - use strafebyDeadwheels
      */
     @Deprecated
-    protected void strafeOld(double distance, double power, boolean right, int heading, ElapsedTime runtime) throws InterruptedException {
+    protected void strafeOld(double distance, double power, boolean right, int heading, ElapsedTime runtime) throws HeartBeatException {
         resetMotors();
         pidStrafe.reset(runtime);
         double currentPosition = leftRear.getCurrentPosition();
@@ -1031,28 +975,20 @@ public abstract class Auto extends LinearOpMode {
      *
      * @param power     sets the speed
      * @param degrees   degree of a circle
-     * @param direction either "right" or "left"
-     * @throws InterruptedException throws if heartbeat throws
+     * @throws HeartBeatException throws if heartbeat throws
      */
-    @Deprecated
-    protected void turnTicks(double power, double degrees, String direction, ElapsedTime runtime) throws InterruptedException {
+//    @Deprecated
+    protected void turnTicks(double power, double degrees, ElapsedTime runtime) throws HeartBeatException {
         resetMotors();
         pidStrafe.reset(runtime);
         double currentPosition = leftRear.getCurrentPosition();
         double radians = degrees * Math.PI / 90;
         int ticks = (int) (radius * radians * LINEAR_TO_TICKS);
+        rightFront.setPower(power);
+        rightRear.setPower(power);
+        leftRear.setPower(-1 * power);
+        leftFront.setPower(-1 * power);
 
-        if (direction.contains("left")) {
-            rightFront.setPower(power * -1);
-            rightRear.setPower(-1 * power);
-            leftRear.setPower(power);
-            leftFront.setPower(power);
-        } else {
-            rightFront.setPower(power);
-            rightRear.setPower(power);
-            leftRear.setPower(-1 * power);
-            leftFront.setPower(-1 * power);
-        }
 
         while (motorsBusy(ticks, currentPosition)) {
             heartbeat();
@@ -1067,30 +1003,36 @@ public abstract class Auto extends LinearOpMode {
      *                 this is to help with speed and effensiency
      * @param powerMax the max power od the turn
      * @param runtime  the current time used during the pid
-     * @throws InterruptedException throws if heartbeat throws
+     * @throws HeartBeatException throws if heartbeat throws
      */
-    protected void turningPID(double target, double powerMax, ElapsedTime runtime) throws InterruptedException {
+    protected void turningPID(double target, double powerMax, ElapsedTime runtime) throws HeartBeatException {
         PIDController pid = new PIDController(runtime, 0.9728499206, 0, 0);
         resetMotors();
         telemetry.addData("angle", getCurrentAngle());
         calibrateBnO055();
         pid.reset(runtime);
-        double error;
-
+        double error = 10000;
+        double current = target;
         do {
-            double current = getCurrentAngle();
-            error = getError(current, target);
+            try {
+                int gyroSatus = imu.getSystemError().ordinal();
+                doom(gyroSatus != 0 && gyroSatus != 0);
+                current = getCurrentAngle();
+                error = getError(current, target);
 
-            double correction = pid.correction(error, runtime);
+                double correction = pid.correction(error, runtime);
 
-            leftRear.setPower(Range.clip(correction, -powerMax, powerMax));
-            leftFront.setPower(Range.clip(correction, -powerMax, powerMax));
-            rightRear.setPower(Range.clip(-correction, -powerMax, powerMax));
-            rightFront.setPower(Range.clip(-correction, -powerMax, powerMax));
+                leftRear.setPower(Range.clip(correction, -powerMax, powerMax));
+                leftFront.setPower(Range.clip(correction, -powerMax, powerMax));
+                rightRear.setPower(Range.clip(-correction, -powerMax, powerMax));
+                rightFront.setPower(Range.clip(-correction, -powerMax, powerMax));
 
-            heartbeat();
-
-
+                heartbeat();
+            } catch (DoomException e) {
+                double renaming = current - target;
+                turnTicks(powerMax, renaming, runtime);
+                break;
+            }
         } while (Math.abs(error) > 3.5);
 
 
@@ -1134,9 +1076,9 @@ public abstract class Auto extends LinearOpMode {
      * @param xDistance
      * @param yDistance
      * @param power
-     * @throws InterruptedException
+     * @throws HeartBeatException
      */
-    protected void diagonalStrafeOld(double xDistance, double yDistance, double power, int heading, ElapsedTime runtime) throws InterruptedException {
+    protected void diagonalStrafeOld(double xDistance, double yDistance, double power, int heading, ElapsedTime runtime) throws HeartBeatException {
         resetDeadWheels();
         resetMotors();
         pid.reset(runtime);
@@ -1259,10 +1201,10 @@ public abstract class Auto extends LinearOpMode {
      * @param yCords
      * @param power
      * @param heading
-     * @throws InterruptedException
+     * @throws HeartBeatException
      */
     protected void spline(double[] xCords, double[] yCords, double power,
-                          int heading, ElapsedTime runtime) throws InterruptedException {
+                          int heading, ElapsedTime runtime) throws HeartBeatException {
         diagonalStrafeOld(xCords[0], yCords[0], power, heading, runtime);
         for (int i = 1; i < xCords.length; i++) {
             diagonalStrafeOld(xCords[i] - xCords[i - 1], yCords[i] - yCords[i - 1], power, heading, runtime);
@@ -1308,9 +1250,9 @@ public abstract class Auto extends LinearOpMode {
     /**
      * for printing dead wheels while testing stuff
      *
-     * @throws InterruptedException
+     * @throws HeartBeatException
      */
-    public void printDeadWheel() throws InterruptedException {
+    public void printDeadWheel() throws HeartBeatException {
         resetDeadWheels();
         while (true) {
             telemetry.clear();
@@ -1348,10 +1290,10 @@ public abstract class Auto extends LinearOpMode {
      * @param arcLen
      * @param targetHeading
      * @param power
-     * @throws InterruptedException
+     * @throws HeartBeatException
      */
     public void spline(Spline spline, double arcLen, double targetHeading, double power) throws
-            InterruptedException {
+            HeartBeatException {
         resetDeadWheels();
         resetMotors();
         double lastx;
@@ -1491,9 +1433,9 @@ public abstract class Auto extends LinearOpMode {
      * @param powerShooter shooter speed
      * @param powerIntake  intake speed
      * @param waitTime
-     * @throws InterruptedException
+     * @throws HeartBeatException
      */
-    public void shoot(double powerShooter, double powerIntake, double waitTime) throws InterruptedException {
+    public void shoot(double powerShooter, double powerIntake, double waitTime) throws HeartBeatException {
         double startTime = runtime.time();
 //        turnOnShooter(powerShooter);
         turnOffEncoders();
@@ -1524,9 +1466,9 @@ public abstract class Auto extends LinearOpMode {
      * @param finalPower
      * @param offset
      * @param halt
-     * @throws InterruptedException
+     * @throws HeartBeatException
      */
-    public void splineMove(double[] xcoords, double[] ycoords, double maximumPower, double initPower, double finalPower, double offset, boolean halt) throws InterruptedException {
+    public void splineMove(double[] xcoords, double[] ycoords, double maximumPower, double initPower, double finalPower, double offset, boolean halt) throws HeartBeatException {
         double baseParallelLeftTicks = shootL.getCurrentPosition();
         double baseParallelRightTicks = -shootR.getCurrentPosition();
 
@@ -1671,7 +1613,7 @@ public abstract class Auto extends LinearOpMode {
 //        telemetry.update();
     }
 
-    public void runIntake(double t) throws InterruptedException {
+    public void runIntake(double t) throws HeartBeatException {
         t += runtime.time();
         feeder.setPower(1);
         while (t > runtime.time()) {
@@ -1688,5 +1630,11 @@ public abstract class Auto extends LinearOpMode {
     public void turnOnEncoders() {
         shootR.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         shootL.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+
+    private void doom(boolean test) throws DoomException {
+        if (false) {
+            throw new DoomException();
+        }
     }
 }
