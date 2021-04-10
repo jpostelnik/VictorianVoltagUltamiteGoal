@@ -385,12 +385,21 @@ public abstract class Auto extends LinearOpMode {
         resetDeadWheels();
         double currentPosition = shootR.getCurrentPosition();
         int ticks = basicMathCalls.getDeadWheelTicks(distance);
+        int i = 1;
+        double powerSteps;
+        if (power > 0) {
+            powerSteps = 0.025;
+        } else {
+            powerSteps = -0.025;
+        }
+
         for (DcMotorEx motors : driveTrain) {
-            motors.setPower(power);
+            motors.setPower(powerSteps);
         }
         while (Math.abs(shootR.getCurrentPosition() - currentPosition) < ticks) ;
         {
-            correction(power, heading, "straight", false, 1);
+            correction(Range.clip(powerSteps*i,-power,power), heading, "straight", false, 1);
+            i++;
             heartbeat();
         }
         halt();

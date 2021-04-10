@@ -25,18 +25,17 @@ public class NewRedWall extends Auto {
             //TODO:: Get one and four to work
             //TODO:: try not to cry
 
-      //      location = SkystoneDeterminationPipeline.RingPosition.NONE;
+        location = SkystoneDeterminationPipeline.RingPosition.FOUR;
             switch (location) {
                 case ONE:
                     System.out.println("b");
                     telemetry.addLine("b");
                     telemetry.update();
-                    strafeByDeadWheels(4, 0.2, false, 0, runtime);
-                    moveByDeadWheels(90, 0.7, 0, runtime);
-                    strafeByDeadWheels(25, 0.4, true, 0, runtime);
 
-//                    turningPID(180, 0.4, runtime);
+                    moveByDeadWheels(90, 0.7, 0, runtime);
+                    strafeByDeadWheels(6, 0.4, true, 0, runtime);
                     dropWobble();
+                   // turningPID(180, 0.4, runtime);
                     strafeByDeadWheels(20, 0.4, true, 0, runtime);
                     moveByDeadWheels(65, -0.7, 0, runtime);
 
@@ -77,6 +76,7 @@ public class NewRedWall extends Auto {
                     // strafeByDeadWheels(5, 0.6, true, 0, runtime);
                     //shoot(0.8, 1);
                     break;
+                    
                 default:
                     // TODO: 9/29/20 add spline moveByDeadWheelsment there
                     System.out.println("a");
