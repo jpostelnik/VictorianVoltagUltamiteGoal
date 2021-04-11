@@ -1,24 +1,14 @@
-package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.testing;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.testing;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.Auto;
-
-
-@Autonomous(name = "test")
-//@Disabled
-public class test extends Auto {
-
-    /***
-     * this runs the auto class
-     */
-
+@Autonomous(name = "shooter Test")
+public class shooterTest extends Auto {
     private ElapsedTime runtime = new ElapsedTime();
-
     @Override
-    public void runOpMode() {
-
+    public void runOpMode() throws InterruptedException {
         telemetry.addLine("starting to initialize");
         telemetry.update();
         initialize();
@@ -26,15 +16,11 @@ public class test extends Auto {
         runtime.reset();
 
         restRuntime();
-
         try {
-//            strafeByDeadWheels(5, 1, false,0 , runtime);
-            move(50, 1, 0, runtime);
-            sleep(10000);
-        } catch (InterruptedException e) {
+            shoot(1, 1, 4);
+        }catch (Exception e){
             e.printStackTrace();
         }
+
     }
-
-
 }

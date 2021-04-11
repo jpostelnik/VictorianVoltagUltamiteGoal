@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.testing;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;

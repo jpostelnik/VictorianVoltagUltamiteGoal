@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.testing;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.tellyOp;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;

@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.testing;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.testing;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
@@ -30,7 +30,7 @@ public class    splineTest extends Auto {
 
         try{
             spline(spline,arclen, 0, 0.4);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
         }
 
 

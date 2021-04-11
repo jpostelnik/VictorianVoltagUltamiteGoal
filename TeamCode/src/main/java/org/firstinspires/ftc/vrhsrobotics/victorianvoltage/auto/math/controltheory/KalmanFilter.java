@@ -29,14 +29,14 @@ public class KalmanFilter {
      * @return
      */
     public SimpleMatrix update(SimpleMatrix z_k,SimpleMatrix U_U) {
-        SimpleMatrix x_k_est = F.mult(x_k_1).plus(B.mult(U_U));
-        SimpleMatrix P_k_est = F.mult(P_k_1).mult(F.transpose()).plus(Q);
+        SimpleMatrix x_k_est = F.mult(x_k_1).plus((B.mult(U_U)));
+        SimpleMatrix P_k_est = (F.mult(P_k_1).mult((F.transpose()))).plus(Q);
 
-        SimpleMatrix y_k = z_k.minus(H.mult(x_k_est));
-        SimpleMatrix S_k = H.mult(P_k_est).mult(H.transpose()).plus(R);
-        SimpleMatrix K = P_k_est.mult(H.transpose().mult(S_k.invert()));
-        SimpleMatrix x_k = x_k_est.plus(K.mult(y_k));
-        SimpleMatrix P_k = (I.minus(K.mult(H))).mult(P_k_est);
+        SimpleMatrix y_k = z_k.minus((H.mult(x_k_est)));
+        SimpleMatrix S_k = (H.mult(P_k_est).mult((H.transpose()))).plus(R);
+        SimpleMatrix K = P_k_est.mult(((H.transpose()).mult((S_k.invert()))));
+        SimpleMatrix x_k = x_k_est.plus((K.mult(y_k)));
+        SimpleMatrix P_k = (I.minus((K.mult(H)))).mult(P_k_est);
 
         this.x_k_1 = x_k;
         this.P_k_1 = P_k;

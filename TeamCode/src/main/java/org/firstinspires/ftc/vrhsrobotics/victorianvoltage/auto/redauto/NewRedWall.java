@@ -1,8 +1,10 @@
-package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.redauto;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.Auto;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.exceptions.HeartBeatException;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.vision.SkystoneDeterminationPipeline;
 
 
@@ -122,7 +124,7 @@ public class NewRedWall extends Auto {
         }
     }
 
-    public void powerShot(ElapsedTime runtime) throws InterruptedException {
+    public void powerShot(ElapsedTime runtime) throws HeartBeatException {
 
         turnOffEncoders();
         strafeByDeadWheels(9, 0.5, true, 0, runtime);

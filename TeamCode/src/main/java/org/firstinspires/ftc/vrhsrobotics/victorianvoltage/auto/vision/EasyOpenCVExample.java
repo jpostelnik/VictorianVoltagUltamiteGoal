@@ -19,7 +19,7 @@
  * SOFTWARE.
  */
 
-package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.vision;
 
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;

@@ -1,8 +1,10 @@
-package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.redauto;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.Auto;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.exceptions.HeartBeatException;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.vision.SkystoneDeterminationPipeline;
 
 
@@ -25,7 +27,7 @@ public class redWall extends Auto {
             //TODO:: Get one and four to work
             //TODO:: try not to cry
 
-           location = SkystoneDeterminationPipeline.RingPosition.FOUR;
+            location = SkystoneDeterminationPipeline.RingPosition.FOUR;
             switch (location) {
                 case ONE:
                     System.out.println("b");
@@ -38,7 +40,7 @@ public class redWall extends Auto {
 //                    turningPID(180, 0.4, runtime);
                     dropWobble();
                     strafeByDeadWheels(20, 0.4, true, 0, runtime);
-                    moveByDeadWheels(65, -0.7, 0, runtime);
+                    moveByDeadWheels(64, -0.7, 0, runtime);
 
                     lowerWobble();
                     sleep(1000);
@@ -48,37 +50,40 @@ public class redWall extends Auto {
                     moveByDeadWheels(71, 0.7, 0, runtime);
                     strafeByDeadWheels(10, 0.6, false, 0, runtime);
                     dropWobble();
-                    moveByDeadWheels(15, -0.7, 0, runtime);
-                    // strafeByDeadWheels(5, 0.6, true, 0, runtime);
-                    // shoot(0.8, 1);
+                    moveByDeadWheels(20, -0.7, 0, runtime);
+                     strafeByDeadWheels(5, 0.6, true, 0, runtime);
+                     shoot(1, 1,4);
                     break;
                 case FOUR:
                     System.out.println("c");
                     telemetry.addLine("c");
                     telemetry.update();
                     strafeByDeadWheels(4, 0.3, false, 0, runtime);
-                    moveByDeadWheels(104, 0.8, 0, runtime);
-//                    strafeByDeadWheels(5, 0.3, true, 0, runtime);
+                    moveByDeadWheels(114, 0.8, 0, runtime);
 
                     dropWobble();
 
-                    strafeByDeadWheels(40, 0.8, true, 0, runtime);
-                    moveByDeadWheels(85, -0.8, 0, runtime);
+                    strafeByDeadWheels(42, 0.8, true, 0, runtime);
+                    moveByDeadWheels(89.5, -0.8, 0, runtime);
 
                     lowerWobble();
                     sleep(1000);
                     strafeByDeadWheels(5, 0.3, false, 0, runtime);
+
                     raiseWobble();
                     sleep(1000);
-                    moveByDeadWheels(87, 0.8, 0, runtime);
+                    moveByDeadWheels(94, 0.8, 0, runtime);
                     strafeByDeadWheels(30, 0.3, false, 0, runtime);
+                    turningPID(20,1,runtime);
                     dropWobble();
-                    moveByDeadWheels(30, -0.8, 0, runtime);
-                    //strafeByDeadWheels(5, 0.6, true, 0, runtime);
-                    //shoot(0.8, 1);
+                    turningPID(-20,1,runtime);
+                    moveByDeadWheels(41, -0.8, 0, runtime);
+//                    strafeByDeadWheels(5, 0.6, true, 0, runtime);
+                    shoot(1, 1, 5);
+                    moveByDeadWheels(5, 1, 0, runtime);
                     break;
                 default:
-                    // TODO: 9/29/20 add spline movement there
+                    // TODO: 9/29/20 add spline moveByDeadWheelsment there
                     System.out.println("a");
                     telemetry.addLine("a");
                     telemetry.update();
@@ -96,15 +101,15 @@ public class redWall extends Auto {
                     strafeByDeadWheels(34, 0.5, false, 0, runtime);
                     dropWobble();
                     strafeByDeadWheels(8, 0.5, true, 0, runtime);
-              moveByDeadWheels(8, -0.5, 0, runtime);
+                    moveByDeadWheels(8, -0.5, 0, runtime);
 //                    shoot(1, 1, 4);
 //                    strafeByDeadWheels(30, 0.5, true, 0, runtime);
-              //  powerShot(runtime);
-                 //   moveByDeadWheels(8, 0.5, 0, runtime);
+                    //  powerShot(runtime);
+                    //   moveByDeadWheels(8, 0.5, 0, runtime);
 //                    moveByDeadWheels(63, 0, 1, 0, runtime);
-                    moveByDeadWheels(20, -0.8, 0, runtime);
-                    strafeByDeadWheels(4, 0.5, true, 0, runtime);
-                    moveByDeadWheels(3, -0.8, 0, runtime);
+//                    moveByDeadWheels(20, -0.8, 0, runtime);
+//                    strafeByDeadWheels(4, 0.5, true, 0, runtime);
+                    moveByDeadWheels(3, 0.8, 0, runtime);
                     shoot(.8, 1, 4);
                     break;
                 //todo: will be what is in 0. So might remove it.
@@ -122,7 +127,7 @@ public class redWall extends Auto {
         }
     }
 
-    public void powerShot(ElapsedTime runtime) throws InterruptedException {
+    public void powerShot(ElapsedTime runtime) throws HeartBeatException {
 
         turnOffEncoders();
         strafeByDeadWheels(9, 0.5, true, 0, runtime);
@@ -130,7 +135,7 @@ public class redWall extends Auto {
         strafeByDeadWheels(4, 0.5, true, 0, runtime);
         shoot(0.8, 1, 0.35);
         strafeByDeadWheels(4, 0.5, true, 0, runtime);
-        shoot(0.8,1,0.25);
+        shoot(0.8, 1, 0.25);
         turnOnEncoders();
     }
 }

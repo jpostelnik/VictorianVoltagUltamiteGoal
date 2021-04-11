@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.testing;
+package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.testing;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
@@ -17,7 +17,7 @@ public class batteryPlotting extends Auto {
         runtime.reset();
         try {
             moveByTime(2, 1, runtime);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
 
         }
 
