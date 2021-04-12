@@ -1,13 +1,12 @@
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.testing;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 
 @TeleOp(name = "dst")
-@Disabled
+//@Disabled
 public class DS extends LinearOpMode {
 
     @Override

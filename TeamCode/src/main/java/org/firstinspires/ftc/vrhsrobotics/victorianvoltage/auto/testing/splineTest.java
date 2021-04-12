@@ -26,7 +26,7 @@ public class    splineTest extends Auto {
 
         waitForStart();
         runtime.reset();
-        restRuntime();
+        resetRuntime();
 
         try{
             spline(spline,arclen, 0, 0.4);

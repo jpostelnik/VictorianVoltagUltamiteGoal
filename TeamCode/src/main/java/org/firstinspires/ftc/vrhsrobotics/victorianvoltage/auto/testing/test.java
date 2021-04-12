@@ -25,13 +25,15 @@ public class test extends Auto {
         waitForStart();
         runtime.reset();
 
-        restRuntime();
+        resetRuntime();
 
         try {
 //            strafeByDeadWheels(5, 1, false,0 , runtime);
             move(50, 1, 0, runtime);
             sleep(10000);
         } catch (Exception e) {
+            halt();
+            sleep(10*1000);
             e.printStackTrace();
         }
     }
