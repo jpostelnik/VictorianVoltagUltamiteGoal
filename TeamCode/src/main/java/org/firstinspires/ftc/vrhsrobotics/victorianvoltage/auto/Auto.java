@@ -83,13 +83,12 @@ public abstract class Auto extends LinearOpMode {
     //KalmanFilter Filter
     //updates ever 50 miliseconds
     double dt = 0.05;
-    SimpleMatrix f = new SimpleMatrix(new double[][]{
+    SimpleMatrix F = new SimpleMatrix(new double[][]{
             {1, 0, dt, 0},
             {0, 1, 0, dt},
             {0, 0, 1, 0},
             {0, 0, 0, 1}
-    }
-    );
+    });
 
     SimpleMatrix G = new SimpleMatrix(new double[][]{
             {0.5 * dt * dt},
@@ -98,10 +97,10 @@ public abstract class Auto extends LinearOpMode {
             {dt}
     });
 
-    double sigma_a = 0.005;
+    double sigma_a = 0.001;
     SimpleMatrix Q = G.mult(G.transpose()).scale(sigma_a * sigma_a);
 
-    SimpleMatrix H = SimpleMatrix.identity(f.numRows());
+    SimpleMatrix H = SimpleMatrix.identity(F.numRows());
 
     double positionVar = 0.005;
     double velocityVar = 0.001;
@@ -131,7 +130,7 @@ public abstract class Auto extends LinearOpMode {
             {0}
     });
 
-    KalmanFilter robotKalmanFilter = new KalmanFilter(f, G, R, Q, H);
+    KalmanFilter robotKalmanFilter = new KalmanFilter(F, G, R, Q, H);
 
 
     /**
@@ -336,7 +335,7 @@ public abstract class Auto extends LinearOpMode {
      * this rests the encoder positions to 0
      */
     private void resetMotors() {
-
+Kal
         for (DcMotorEx motor : driveTrain) {
             motor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
             motor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
@@ -512,13 +511,15 @@ public abstract class Auto extends LinearOpMode {
                 {0}
         });
 
-        int i = 1;
         double powerSteps;
         if (power > 0) {
             powerSteps = 0.05;
         } else {
             powerSteps = -0.05;
         }
+        power = Math.abs(power);
+
+        double currentPower = powerSteps;
 
         SimpleMatrix updatedEst = x_0;
 
@@ -534,8 +535,7 @@ public abstract class Auto extends LinearOpMode {
             }
             heartbeat();
 
-            double currentPower = Range.clip(powerSteps * i, -1, 1);
-            i++;
+            currentPower = Range.clip(currentPower + powerSteps, -power, power);
             drive(currentPower);
 
             double sleepTime = nextUpdateTime - runtime.milliseconds();
@@ -544,11 +544,14 @@ public abstract class Auto extends LinearOpMode {
 
             double x = ticksToInch(encX.getCurrentPosition()),
                     y = ticksToInch(encY.getCurrentPosition());
+            double dt_actual = runtime.milliseconds() - lastEstimateTime;
+            lastEstimateTime = runtime.milliseconds();
+
             SimpleMatrix z_k = new SimpleMatrix(new double[][]{
                     {x},
                     {y},
-                    {(x-lastX)/dt},
-                    {(y-lastY)/dt}
+                    {(x-lastX)/dt_actual},
+                    {(y-lastY)/dt_actual}
             });
             lastX = x;
             lastY = y;
@@ -558,10 +561,7 @@ public abstract class Auto extends LinearOpMode {
             SimpleMatrix u = estimateControlInput(speed, 50);
             updatedEst = robotKalmanFilter.update(z_k, u);
 
-            double dt_actual = runtime.milliseconds() - lastEstimateTime;
-            lastEstimateTime = runtime.milliseconds();
-
-            System.out.println("dt_actual = " + dt_actual);
+            System.out.println("speed = " + speed);
             System.out.println("z_k = " + z_k.transpose());
             System.out.println("updatedEst = " + updatedEst.transpose());
             telemetry.update();
