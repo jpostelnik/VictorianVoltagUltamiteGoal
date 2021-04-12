@@ -524,6 +524,7 @@ public abstract class Auto extends LinearOpMode {
 
         double nextUpdateTime = runtime.milliseconds() + dt * 1000;
         double lastEstimateTime = runtime.milliseconds();
+        double lastX = 0, lastY = 0;
 
         while (true) {
             double d = distance(targetVector, position(updatedEst));
@@ -541,12 +542,16 @@ public abstract class Auto extends LinearOpMode {
             sleep((long) sleepTime);
             nextUpdateTime = runtime.milliseconds() + dt * 1000;
 
+            double x = ticksToInch(encX.getCurrentPosition()),
+                    y = ticksToInch(encY.getCurrentPosition());
             SimpleMatrix z_k = new SimpleMatrix(new double[][]{
-                    {ticksToInch(encX.getCurrentPosition())},
-                    {ticksToInch(encY.getCurrentPosition())},
-                    {ticksToInch(encX.getVelocity())},
-                    {ticksToInch(encY.getVelocity())}
+                    {x},
+                    {y},
+                    {(x-lastX)/dt},
+                    {(y-lastY)/dt}
             });
+            lastX = x;
+            lastY = y;
 
             SimpleMatrix v = velocity(z_k);
             double speed = v.normF();
