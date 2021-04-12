@@ -35,7 +35,7 @@ public class KalmanFilter {
         SimpleMatrix P = F.mult(P_k_1).mult(F_T).plus(Q);
 
         SimpleMatrix S = H.mult(P).mult(H_T).plus(R);
-        SimpleMatrix K = P.mult(H_T).mult(S.invert()));
+        SimpleMatrix K = P.mult(H_T).mult(S.invert());
 
         SimpleMatrix y = z.minus(H.mult(x));
 

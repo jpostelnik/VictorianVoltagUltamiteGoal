@@ -29,7 +29,7 @@ public class test extends Auto {
 
         try {
 //            strafeByDeadWheels(5, 1, false,0 , runtime);
-            move(50, 1, 0, runtime);
+            move(50, 0.7, 0, runtime);
             sleep(10000);
         } catch (Exception e) {
             halt();

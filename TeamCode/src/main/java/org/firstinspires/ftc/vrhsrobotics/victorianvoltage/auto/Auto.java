@@ -82,7 +82,7 @@ public abstract class Auto extends LinearOpMode {
 
     //KalmanFilter Filter
     //updates ever 50 miliseconds
-    double dt = 0.05;
+    double dt = 0.025;
     SimpleMatrix F = new SimpleMatrix(new double[][]{
             {1, 0, dt, 0},
             {0, 1, 0, dt},
@@ -97,7 +97,7 @@ public abstract class Auto extends LinearOpMode {
             {dt}
     });
 
-    double sigma_a = 0.001;
+    double sigma_a = 0.005;
     SimpleMatrix Q = G.mult(G.transpose()).scale(sigma_a * sigma_a);
 
     SimpleMatrix H = SimpleMatrix.identity(F.numRows());
@@ -335,7 +335,6 @@ public abstract class Auto extends LinearOpMode {
      * this rests the encoder positions to 0
      */
     private void resetMotors() {
-Kal
         for (DcMotorEx motor : driveTrain) {
             motor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
             motor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
@@ -481,7 +480,7 @@ Kal
     public void move(double distanceX, double power, int heading, ElapsedTime runtime) throws HeartBeatException {
         pid.reset(runtime);
         resetDeadWheels();
-        setWatchDogExpiration(distanceX/30);
+        setWatchDogExpiration(distanceX/25);
 
         double theta = 0;
         SimpleMatrix B = new SimpleMatrix(new double[][]{
@@ -524,8 +523,9 @@ Kal
         SimpleMatrix updatedEst = x_0;
 
         double nextUpdateTime = runtime.milliseconds() + dt * 1000;
-        double lastEstimateTime = runtime.milliseconds();
-        double lastX = 0, lastY = 0;
+        double lastEstimateTime = runtime.seconds();
+        double lastX = ticksToInch(encX.getCurrentPosition()),
+                lastY = ticksToInch(encY.getCurrentPosition());
 
         while (true) {
             double d = distance(targetVector, position(updatedEst));
@@ -539,13 +539,15 @@ Kal
             drive(currentPower);
 
             double sleepTime = nextUpdateTime - runtime.milliseconds();
-            sleep((long) sleepTime);
-            nextUpdateTime = runtime.milliseconds() + dt * 1000;
+            if(sleepTime > 0) {
+                sleep((long) sleepTime);
+            }
+            nextUpdateTime += dt * 1000;
 
             double x = ticksToInch(encX.getCurrentPosition()),
                     y = ticksToInch(encY.getCurrentPosition());
-            double dt_actual = runtime.milliseconds() - lastEstimateTime;
-            lastEstimateTime = runtime.milliseconds();
+            double dt_actual = runtime.seconds() - lastEstimateTime;
+            lastEstimateTime = runtime.seconds();
 
             SimpleMatrix z_k = new SimpleMatrix(new double[][]{
                     {x},
@@ -561,6 +563,7 @@ Kal
             SimpleMatrix u = estimateControlInput(speed, 50);
             updatedEst = robotKalmanFilter.update(z_k, u);
 
+            System.out.println("dt_actual = " + dt_actual);
             System.out.println("speed = " + speed);
             System.out.println("z_k = " + z_k.transpose());
             System.out.println("updatedEst = " + updatedEst.transpose());
@@ -671,8 +674,8 @@ Kal
             });
             SimpleMatrix updatedEst = estimateControlInput(basicMathCalls.ticksToInch(encY.getVelocity()), 35);
             SimpleMatrix currentPositionVector = new SimpleMatrix(new double[][]{
-                    {ticksToInch(robotKalmanFilter.getXPosition())},
-                    {ticksToInch(robotKalmanFilter.getYPosition())}
+                    {0},
+                    {0}
             });
 
             SimpleMatrix errorVector = targetVector.minus(currentPositionVector);
@@ -877,8 +880,8 @@ Kal
             SimpleMatrix updatedEst = estimateControlInput(basicMathCalls.ticksToInch(encY.getVelocity()), 35);
 
             SimpleMatrix currentPositionVector = new SimpleMatrix(new double[][]{
-                    {ticksToInch(robotKalmanFilter.getXPosition())},
-                    {ticksToInch(robotKalmanFilter.getYPosition())}
+                    {0},
+                    {0}
             });
 
             SimpleMatrix errorVector = targetVector.minus(currentPositionVector);
