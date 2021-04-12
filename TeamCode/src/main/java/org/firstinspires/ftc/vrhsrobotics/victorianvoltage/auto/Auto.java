@@ -479,8 +479,7 @@ public abstract class Auto extends LinearOpMode {
     }
 
 
-    public void
-    move(double distanceX, double power, int heading, ElapsedTime runtime) throws HeartBeatException {
+    public void move(double distanceX, double power, int heading, ElapsedTime runtime) throws HeartBeatException {
         pid.reset(runtime);
         resetDeadWheels();
         setWatchDogExpiration(distanceX/30);
