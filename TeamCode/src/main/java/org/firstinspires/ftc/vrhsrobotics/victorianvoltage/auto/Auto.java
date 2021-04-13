@@ -23,6 +23,8 @@ import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.exceptions.Heart
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.MotionProfiling.MotionProfiler;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.basicMathCalls;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.KalmanFilter;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.Kinematic;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.MotionProfiling;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.PIDController;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.RobotKalmanFilter;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.spline.Bezier;
@@ -55,7 +57,8 @@ public abstract class Auto extends LinearOpMode {
     private final double DEAD_WHEEL_TO_TICKS = DEAD_WHEEL_TICKS_PER_REV / (Math.PI * DEAD_WHEEL_DIAMTER);
     private final double EPSILON = 0.25;
     private double watchDogExpiration;
-
+    private final double WIDTH = 7;
+    private final double HEIGHT = 7;
 
     private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, feeder;
     private DcMotorEx encX, encY;
@@ -79,6 +82,8 @@ public abstract class Auto extends LinearOpMode {
     protected WebcamName weCam;
     protected OpenCvCamera camera;
     protected SkystoneDeterminationPipeline pipeline;
+
+    private Kinematic robotKinematics = new Kinematic(WIDTH, HEIGHT);
 
     //KalmanFilter Filter
     //updates ever 50 miliseconds
@@ -223,8 +228,8 @@ public abstract class Auto extends LinearOpMode {
         feeder.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
         //alias to mark as deadwheels
-        encX = shootR;
-        encY = intake;
+        encX = intake;
+        encY = shootR;
 
         telemetry.addLine("deadwheels done");
         telemetry.update();
@@ -477,10 +482,11 @@ public abstract class Auto extends LinearOpMode {
     }
 
 
-    public void move(double distanceX, double power, int heading, ElapsedTime runtime) throws HeartBeatException {
+    public void move(SimpleMatrix target, double power, ElapsedTime runtime) throws HeartBeatException {
         pid.reset(runtime);
         resetDeadWheels();
-        setWatchDogExpiration(distanceX/25);
+        setWatchDogExpiration(target.normF() / 25);
+        MotionProfiling mp = new MotionProfiling(power,robotKinematics);
 
         double theta = 0;
         SimpleMatrix B = new SimpleMatrix(new double[][]{
@@ -505,10 +511,6 @@ public abstract class Auto extends LinearOpMode {
         });
         robotKalmanFilter.setInitalPostion(x_0, p_0, B);
 
-        SimpleMatrix targetVector = new SimpleMatrix(new double[][]{
-                {distanceX},
-                {0}
-        });
 
         double powerSteps;
         if (power > 0) {
@@ -518,7 +520,6 @@ public abstract class Auto extends LinearOpMode {
         }
         power = Math.abs(power);
 
-        double currentPower = powerSteps;
 
         SimpleMatrix updatedEst = x_0;
 
@@ -528,18 +529,19 @@ public abstract class Auto extends LinearOpMode {
                 lastY = ticksToInch(encY.getCurrentPosition());
 
         while (true) {
-            double d = distance(targetVector, position(updatedEst));
+            SimpleMatrix error = target.minus(position(updatedEst));
+            double d = error.normF();
             System.out.println("distance = " + d);
             if (d < EPSILON) {
                 break;
             }
             heartbeat();
 
-            currentPower = Range.clip(currentPower + powerSteps, -power, power);
-            drive(currentPower);
+            drive(mp.power(error));
+//            drive(mp.power());
 
             double sleepTime = nextUpdateTime - runtime.milliseconds();
-            if(sleepTime > 0) {
+            if (sleepTime > 0) {
                 sleep((long) sleepTime);
             }
             nextUpdateTime += dt * 1000;
@@ -549,11 +551,13 @@ public abstract class Auto extends LinearOpMode {
             double dt_actual = runtime.seconds() - lastEstimateTime;
             lastEstimateTime = runtime.seconds();
 
+
+
             SimpleMatrix z_k = new SimpleMatrix(new double[][]{
                     {x},
                     {y},
-                    {(x-lastX)/dt_actual},
-                    {(y-lastY)/dt_actual}
+                    {(x - lastX) / dt_actual},
+                    {(y - lastY) / dt_actual}
             });
             lastX = x;
             lastY = y;
@@ -590,6 +594,14 @@ public abstract class Auto extends LinearOpMode {
         for (DcMotorEx motor : driveTrain) {
             motor.setPower(currentPower);
         }
+    }
+
+    private void drive(SimpleMatrix w) {
+        rightFront.setPower(w.get(0));
+        leftRear.setPower(w.get(2));
+        leftFront.setPower(w.get(1));
+        rightRear.setPower(w.get(3));
+
     }
 
     private SimpleMatrix position(SimpleMatrix updatedEst) {
