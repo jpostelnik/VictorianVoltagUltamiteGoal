@@ -2,7 +2,7 @@ package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controlthe
 
 import org.ejml.simple.SimpleMatrix;
 
-public class Kinematic {
+public class Kinematics {
     private double width, height;
 
     private SimpleMatrix J, R;
@@ -27,8 +27,16 @@ public class Kinematic {
 //        return power.scale(1 / maxPower);
 //    }
 
-    // this is relative to the
-    public SimpleMatrix getPowerRelative(double Vx, double Vy, double dTheta) {
+    /**
+     * Compute power to apply to each wheel relative to the robot
+     * coordinate plane (y is forward, x is side-to-side)
+     *
+     * @param Vx     - component of velocity in x direction
+     * @param Vy     - component of velocity in y direction
+     * @param dTheta - rate of rotation around center of the robot
+     * @return matrix of wheel angular velocities (power)
+     */
+    public SimpleMatrix getWheelPower(double Vx, double Vy, double dTheta) {
         SimpleMatrix cx = new SimpleMatrix(new double[][]{{Vx, Vy, dTheta}});
         SimpleMatrix power = J.mult(cx);
         double maxPower = power.elementMaxAbs();

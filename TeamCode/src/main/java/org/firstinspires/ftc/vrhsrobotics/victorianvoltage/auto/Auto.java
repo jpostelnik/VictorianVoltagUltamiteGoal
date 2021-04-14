@@ -83,7 +83,7 @@ public abstract class Auto extends LinearOpMode {
     protected OpenCvCamera camera;
     protected SkystoneDeterminationPipeline pipeline;
 
-    private Kinematic robotKinematics = new Kinematic(WIDTH, HEIGHT);
+    private Kinematic robotKinematics = new Kinematics(WIDTH, HEIGHT);
 
     //KalmanFilter Filter
     //updates ever 50 miliseconds
@@ -481,21 +481,29 @@ public abstract class Auto extends LinearOpMode {
         halt();
     }
 
-
+    /**
+     * Move robot to desired position
+     *
+     * @param target  Destination in robot coordinate plane (x is side-to-side, y is forward-backward)
+     * @param power   Max power to use (0-1)
+     * @param runtime Internal system clock
+     * @throws HeartBeatException thrown if fail safe is violated or mode changes to teleop
+     */
     public void move(SimpleMatrix target, double power, ElapsedTime runtime) throws HeartBeatException {
         pid.reset(runtime);
         resetDeadWheels();
-        setWatchDogExpiration(target.normF() / 25);
-        MotionProfiling mp = new MotionProfiling(power,robotKinematics);
+        MotionProfiling mp = new MotionProfiling(power, robotKinematics);
 
-        double theta = 0;
+        double origDistanceToTarget = target.normF();
+        double theta = Math.atan2(target.get(1), target.get(0));
         SimpleMatrix B = new SimpleMatrix(new double[][]{
                 {dt * dt / 2 * Math.cos(theta), 0, 0, 0},
                 {0, dt * dt / 2 * Math.sin(theta), 0, 0},
                 {0, 0, dt * dt / 2 * Math.cos(theta), 0},
                 {0, 0, 0, dt * dt / 2 * Math.sin(theta)}
-
         });
+
+        setWatchDogExpiration(origDistanceToTarget / 25);
 
         SimpleMatrix x_0 = new SimpleMatrix(new double[][]{
                 {0},
@@ -511,16 +519,6 @@ public abstract class Auto extends LinearOpMode {
         });
         robotKalmanFilter.setInitalPostion(x_0, p_0, B);
 
-
-        double powerSteps;
-        if (power > 0) {
-            powerSteps = 0.05;
-        } else {
-            powerSteps = -0.05;
-        }
-        power = Math.abs(power);
-
-
         SimpleMatrix updatedEst = x_0;
 
         double nextUpdateTime = runtime.milliseconds() + dt * 1000;
@@ -530,15 +528,22 @@ public abstract class Auto extends LinearOpMode {
 
         while (true) {
             SimpleMatrix error = target.minus(position(updatedEst));
-            double d = error.normF();
-            System.out.println("distance = " + d);
-            if (d < EPSILON) {
+            double currentDistToTarget = error.normF();
+            SimpleMatrix errorDir = error.scale(1 / currentDistToTarget);
+
+            System.out.println(
+                    "distance = " + currentDistToTarget,
+                    "heading=" + Math.toDegrees(Math.atan2(errorDir.get(1), errorDir.get(0)))
+            );
+            if (currentDistToTarget < EPSILON) {
                 break;
             }
             heartbeat();
 
-            drive(mp.power(error));
-//            drive(mp.power());
+            double currentPower = mp.power(errorDir, 1 - currentDistToTarget / origDistanceToTarget);
+            SimpleMatrix Vnext = dir.scale(currentPower);
+            SimpleMatrix w = robotKinematics.getWheelPower(Vnext.get(0), Vnext.get(1), 0);
+            drive(w);
 
             double sleepTime = nextUpdateTime - runtime.milliseconds();
             if (sleepTime > 0) {
@@ -550,8 +555,6 @@ public abstract class Auto extends LinearOpMode {
                     y = ticksToInch(encY.getCurrentPosition());
             double dt_actual = runtime.seconds() - lastEstimateTime;
             lastEstimateTime = runtime.seconds();
-
-
 
             SimpleMatrix z_k = new SimpleMatrix(new double[][]{
                     {x},
@@ -572,9 +575,6 @@ public abstract class Auto extends LinearOpMode {
             System.out.println("z_k = " + z_k.transpose());
             System.out.println("updatedEst = " + updatedEst.transpose());
             telemetry.update();
-
-            //saftey checks
-//          doom(leftFrontDistance.getDistance(DistanceUnit.CM) < 10 || rightFrontDistance.getDistance(DistanceUnit.CM) < 10);
         }
 
         halt();
@@ -598,10 +598,9 @@ public abstract class Auto extends LinearOpMode {
 
     private void drive(SimpleMatrix w) {
         rightFront.setPower(w.get(0));
-        leftRear.setPower(w.get(2));
         leftFront.setPower(w.get(1));
+        leftRear.setPower(w.get(2));
         rightRear.setPower(w.get(3));
-
     }
 
     private SimpleMatrix position(SimpleMatrix updatedEst) {

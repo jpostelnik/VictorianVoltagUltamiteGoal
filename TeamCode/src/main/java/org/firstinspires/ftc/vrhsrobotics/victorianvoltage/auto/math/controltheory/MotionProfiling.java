@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory;
 
 import org.ejml.simple.SimpleMatrix;
+import com.qualcomm.robotcore.util.Range;
 
 public class MotionProfiling {
     private double currentPower, maxPower;
@@ -8,11 +9,10 @@ public class MotionProfiling {
     private Kinematic kinematic;
 
     private static final double STEP = 0.05;
-    private static final double INITIAL = 0.03;
-
+    private static final double MIN_POWER = 0.15;
 
     public MotionProfiling(double maxPower, Kinematic kinematic, SimpleMatrix target) {
-        currentPower = INITIAL;
+        currentPower = MIN_POWER;
         this.kinematic = kinematic;
         this.maxPower = maxPower;
         this.target = target;
@@ -20,21 +20,20 @@ public class MotionProfiling {
 
     public double power() {
         currentPower += STEP;
-        return currentPower > maxPower ? maxPower : currentPower;
 
+        return currentPower > maxPower ? maxPower : currentPower;
     }
 
-    public SimpleMatrix power(SimpleMatrix error) {
-        double percent = target.normF() / error.normF();
-        SimpleMatrix unit = error.scale(1 / error.normF());
-        if(percent<0.25){
-            currentPower += STEP;
-        }else if(percent>0.75){
-            currentPower -= STEP;
-        }else {
+    public double power(dir SimpleMatrix, percent double) {
+        if (percent < 0.25) {
+            currentPower = Range.clip(currentPower + STEP, MIN_POWER, maxPower);
+        } else if (percent > 0.75) {
+            currentPower = Range.clip(currentPower - STEP, MIN_POWER, maxPower);
+        } else {
             currentPower = maxPower;
         }
-        return kinematic.getPowerRelative(unit.get(0) * currentPower, unit.get(1) * currentPower, 0);
+
+        return currentPower;
     }
 
 
