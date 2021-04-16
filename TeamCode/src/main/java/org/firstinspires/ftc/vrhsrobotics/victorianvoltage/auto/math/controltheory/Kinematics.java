@@ -7,7 +7,7 @@ public class Kinematics {
 
     private SimpleMatrix J, R;
 
-    public Kinematic(double width, double height) {
+    public Kinematics(double width, double height) {
         this.width = width;
         this.height = height;
 
@@ -37,9 +37,11 @@ public class Kinematics {
      * @return matrix of wheel angular velocities (power)
      */
     public SimpleMatrix getWheelPower(double Vx, double Vy, double dTheta) {
-        SimpleMatrix cx = new SimpleMatrix(new double[][]{{Vx, Vy, dTheta}});
+        SimpleMatrix cx = new SimpleMatrix(new double[][]{{Vx}, {Vy}, {dTheta}});
         SimpleMatrix power = J.mult(cx);
         double maxPower = power.elementMaxAbs();
+
+        System.out.println("wheel power = "+ power.scale(1 / maxPower).transpose());
 
         return power.scale(1 / maxPower);
     }

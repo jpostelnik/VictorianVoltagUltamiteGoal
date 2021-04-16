@@ -23,7 +23,7 @@ import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.exceptions.Heart
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.MotionProfiling.MotionProfiler;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.basicMathCalls;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.KalmanFilter;
-import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.Kinematic;
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.Kinematics;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.MotionProfiling;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.PIDController;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory.RobotKalmanFilter;
@@ -55,14 +55,15 @@ public abstract class Auto extends LinearOpMode {
     private final double DEAD_WHEEL_DIAMTER = 2;
     private final double DEAD_WHEEL_TICKS_PER_REV = 4096;
     private final double DEAD_WHEEL_TO_TICKS = DEAD_WHEEL_TICKS_PER_REV / (Math.PI * DEAD_WHEEL_DIAMTER);
-    private final double EPSILON = 0.25;
+    private final double EPSILON = 1;
+    private final double WIDTH = 5;
+    private final double HEIGHT = 5.5;
+
     private double watchDogExpiration;
-    private final double WIDTH = 7;
-    private final double HEIGHT = 7;
 
     private DcMotorEx rightFront, leftFront, rightRear, leftRear, shootR, shootL, intake, feeder;
     private DcMotorEx encX, encY;
-    private Servo arm, hook, liftPlateLeft, liftPlateRight;
+    private Servo arm, hook;
 
     private BNO055IMU imu;
     private ElapsedTime runtime = new ElapsedTime();
@@ -83,7 +84,7 @@ public abstract class Auto extends LinearOpMode {
     protected OpenCvCamera camera;
     protected SkystoneDeterminationPipeline pipeline;
 
-    private Kinematic robotKinematics = new Kinematics(WIDTH, HEIGHT);
+    private Kinematics robotKinematics = new Kinematics(WIDTH, HEIGHT);
 
     //KalmanFilter Filter
     //updates ever 50 miliseconds
@@ -492,7 +493,7 @@ public abstract class Auto extends LinearOpMode {
     public void move(SimpleMatrix target, double power, ElapsedTime runtime) throws HeartBeatException {
         pid.reset(runtime);
         resetDeadWheels();
-        MotionProfiling mp = new MotionProfiling(power, robotKinematics);
+        MotionProfiling mp = new MotionProfiling(power, robotKinematics, target);
 
         double origDistanceToTarget = target.normF();
         double theta = Math.atan2(target.get(1), target.get(0));
@@ -503,7 +504,7 @@ public abstract class Auto extends LinearOpMode {
                 {0, 0, 0, dt * dt / 2 * Math.sin(theta)}
         });
 
-        setWatchDogExpiration(origDistanceToTarget / 25);
+        setWatchDogExpiration(origDistanceToTarget / 10);
 
         SimpleMatrix x_0 = new SimpleMatrix(new double[][]{
                 {0},
@@ -532,8 +533,8 @@ public abstract class Auto extends LinearOpMode {
             SimpleMatrix errorDir = error.scale(1 / currentDistToTarget);
 
             System.out.println(
-                    "distance = " + currentDistToTarget,
-                    "heading=" + Math.toDegrees(Math.atan2(errorDir.get(1), errorDir.get(0)))
+                    "distance = " + currentDistToTarget+
+                    "\nheading= " + Math.toDegrees(Math.atan2(errorDir.get(1), errorDir.get(0)))
             );
             if (currentDistToTarget < EPSILON) {
                 break;
@@ -541,7 +542,7 @@ public abstract class Auto extends LinearOpMode {
             heartbeat();
 
             double currentPower = mp.power(errorDir, 1 - currentDistToTarget / origDistanceToTarget);
-            SimpleMatrix Vnext = dir.scale(currentPower);
+            SimpleMatrix Vnext = errorDir.scale(currentPower);
             SimpleMatrix w = robotKinematics.getWheelPower(Vnext.get(0), Vnext.get(1), 0);
             drive(w);
 
@@ -568,12 +569,15 @@ public abstract class Auto extends LinearOpMode {
             SimpleMatrix v = velocity(z_k);
             double speed = v.normF();
             SimpleMatrix u = estimateControlInput(speed, 50);
-            updatedEst = robotKalmanFilter.update(z_k, u);
+//            updatedEst = robotKalmanFilter.update(z_k, u);
+            updatedEst = z_k;
 
             System.out.println("dt_actual = " + dt_actual);
             System.out.println("speed = " + speed);
             System.out.println("z_k = " + z_k.transpose());
-            System.out.println("updatedEst = " + updatedEst.transpose());
+            System.out.println("error= "+error.transpose());
+            System.out.println("error norm="+error.normF());
+//            System.out.println("updatedEst = " + updatedEst.transpose());
             telemetry.update();
         }
 

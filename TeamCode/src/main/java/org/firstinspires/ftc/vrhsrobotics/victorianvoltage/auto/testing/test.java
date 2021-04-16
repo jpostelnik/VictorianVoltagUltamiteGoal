@@ -3,6 +3,7 @@ package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.testing;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.ejml.simple.SimpleMatrix;
 import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.Auto;
 
 
@@ -29,11 +30,30 @@ public class test extends Auto {
 
         try {
 //            strafeByDeadWheels(5, 1, false,0 , runtime);
-            move(50, 0.7, 0, runtime);
+//                        move(new SimpleMatrix(new double[][]{{0}, {50}}), 1, runtime);
+//                        sleep(2000);
+//                        move(new SimpleMatrix(new double[][]{{0},{-50}}),1,runtime);
+////            sleep(2000);
+//            move(new SimpleMatrix(new double[][]{{25}, {0}}), 1, runtime);
+//            sleep(2000);
+//
+//            move(new SimpleMatrix(new double[][]{{-25}, {0}}), 1, runtime);
+//            sleep(2000);
+
+            move(new SimpleMatrix(new double[][]{{10}, {20}}), 1, runtime);
+            sleep(2000);
+
+            move(new SimpleMatrix(new double[][]{{-10}, {-20}}), 1, runtime);
+            sleep(2000);
+
+            move(new SimpleMatrix(new double[][]{{10}, {30}}), 1, runtime);
+            sleep(2000);
+
+
             sleep(10000);
         } catch (Exception e) {
             halt();
-            sleep(10*1000);
+            sleep(10 * 1000);
             e.printStackTrace();
         }
     }

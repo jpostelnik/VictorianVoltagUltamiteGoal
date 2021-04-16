@@ -1,13 +1,14 @@
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.testing;
 
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+
+import org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.Auto;
 
 
 @TeleOp(name = "dst")
 //@Disabled
-public class DS extends LinearOpMode {
+public class DS extends Auto {
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -26,6 +27,7 @@ public class DS extends LinearOpMode {
 
         while (opModeIsActive())
         {
+            resetDeadWheels();
             telemetry.clear();
             telemetry.addData("forward right", shootR.getCurrentPosition() / DEAD_WHEEL_TO_TICKS);
 //        telemetry.addData("forward Left",shootL.getCurrentPosition());
