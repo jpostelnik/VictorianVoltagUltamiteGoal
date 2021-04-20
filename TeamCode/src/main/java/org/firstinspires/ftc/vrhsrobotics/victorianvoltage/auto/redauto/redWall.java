@@ -27,7 +27,7 @@ public class redWall extends Auto {
             //TODO:: Get one and four to work
             //TODO:: try not to cry
 
-            location = SkystoneDeterminationPipeline.RingPosition.FOUR;
+            location = SkystoneDeterminationPipeline.RingPosition.ONE;
             switch (location) {
                 case ONE:
                     System.out.println("b");
@@ -39,8 +39,8 @@ public class redWall extends Auto {
 
 //                    turningPID(180, 0.4, runtime);
                     dropWobble();
-                    strafeByDeadWheels(20, 0.4, true, 0, runtime);
-                    moveByDeadWheels(64, -0.7, 0, runtime);
+                    strafeByDeadWheels(23, 0.4, true, 0, runtime);
+                    moveByDeadWheels(70, -0.7, 0, runtime);
 
                     lowerWobble();
                     sleep(1000);
@@ -59,11 +59,11 @@ public class redWall extends Auto {
                     telemetry.addLine("c");
                     telemetry.update();
                     strafeByDeadWheels(4, 0.3, false, 0, runtime);
-                    moveByDeadWheels(114, 0.8, 0, runtime);
+                    moveByDeadWheels(110, 0.8, 0, runtime);
 
                     dropWobble();
 
-                    strafeByDeadWheels(42, 0.8, true, 0, runtime);
+                    strafeByDeadWheels(43, 0.8, true, 0, runtime);
                     moveByDeadWheels(89.5, -0.8, 0, runtime);
 
                     lowerWobble();
@@ -74,9 +74,9 @@ public class redWall extends Auto {
                     sleep(1000);
                     moveByDeadWheels(94, 0.8, 0, runtime);
                     strafeByDeadWheels(30, 0.3, false, 0, runtime);
-                    turningPID(20,1,runtime);
+//                    turningPID(20,1,runtime);
                     dropWobble();
-                    turningPID(-20,1,runtime);
+//                    turningPID(-20,1,runtime);
                     moveByDeadWheels(41, -0.8, 0, runtime);
 //                    strafeByDeadWheels(5, 0.6, true, 0, runtime);
                     shoot(1, 1, 5);

@@ -101,8 +101,8 @@ public class Tely extends OpMode {
     public void setUpShoot() {
         shootR = (DcMotorEx) hardwareMap.dcMotor.get("shootR");
         shootL = (DcMotorEx) hardwareMap.dcMotor.get("shootL");
-        shootR.setDirection(DcMotorSimple.Direction.REVERSE);
-        shootL.setDirection(DcMotorSimple.Direction.REVERSE);
+//        shootR.setDirection(DcMotorSimple.Direction.REVERSE);
+//        shootL.setDirection(DcMotorSimple.Direction.REVERSE);
         shootR.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         shootL.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
@@ -242,7 +242,7 @@ public class Tely extends OpMode {
             intake.setPower(1);
             feeder.setPower(1);
         } else if (gamepad2.right_bumper) {
-            if (ringCheck.getDistance(DistanceUnit.CM) > 4) {
+            if (ringCheck.getDistance(DistanceUnit.CM) > 6) {
                 intake.setPower(1);
                 feeder.setPower(1);
             } else {

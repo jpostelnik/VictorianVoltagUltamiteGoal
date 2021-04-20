@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.vrhsrobotics.victorianvoltage.auto.math.controltheory;
 
+import org.ejml.simple.SimpleMatrix;
+
 public class RobotKalmanFilter {
 
     private final double TICKS_PER_REV = 560;
@@ -12,12 +14,82 @@ public class RobotKalmanFilter {
     private final double DEAD_WHEEL_TICKS_PER_REV = 4096;
     private final double DEAD_WHEEL_TO_TICKS = DEAD_WHEEL_TICKS_PER_REV / (Math.PI * DEAD_WHEEL_DIAMTER);
 
+    //KalmanFilter Filter
+    //updates ever 50 miliseconds
+    private double dt = 0.025;
+    private SimpleMatrix F = new SimpleMatrix(new double[][]{
+            {1, 0, dt, 0},
+            {0, 1, 0, dt},
+            {0, 0, 1, 0},
+            {0, 0, 0, 1}
+    });
 
+    private SimpleMatrix G = new SimpleMatrix(new double[][]{
+            {0.5 * dt * dt},
+            {0.5 * dt * dt},
+            {dt},
+            {dt}
+    });
+
+    private double sigma_a = 0.005;
+    private SimpleMatrix Q = G.mult(G.transpose()).scale(sigma_a * sigma_a);
+
+    private SimpleMatrix H = SimpleMatrix.identity(F.numRows());
+
+    private double positionVar = 0.005;
+    private double velocityVar = 0.001;
+
+    private SimpleMatrix R = new SimpleMatrix(new double[][]{
+            {positionVar, 0, 0, 0},
+            {0, positionVar, 0, 0},
+            {0, 0, velocityVar, 0},
+            {0, 0, 0, velocityVar}
+    });
+
+
+    private double a_x = 20;
+    private double a_y = 20;
+
+    private SimpleMatrix u_u = new SimpleMatrix(new double[][]{
+            {a_x},
+            {a_y},
+            {a_x},
+            {a_y}
+    });
+
+    private SimpleMatrix u_0 = new SimpleMatrix(new double[][]{
+            {0},
+            {0},
+            {0},
+            {0}
+    });
+
+    private KalmanFilter robotKalmanFilter = new KalmanFilter(F, G, R, Q, H);
+
+    private SimpleMatrix z;
+
+    public RobotKalmanFilter(SimpleMatrix z) {
+        this.z = z;
+    }
+
+    public void setZ(SimpleMatrix z) {
+        this.z = z;
+    }
+
+    private SimpleMatrix estimateControlInput(double speed, int steadyStateSpeed) {
+        SimpleMatrix u;
+        if (speed < steadyStateSpeed) {
+            u = u_u;
+        } else {
+            u = u_0;
+        }
+        return u;
+    }
 
 
     /**
-     * @param x this is the x degrees/distance
-     * @param xHat  this is where i want to be
+     * @param x    this is the x degrees/distance
+     * @param xHat this is where i want to be
      * @return returns the error between this
      */
     public static double getError(double x, double xHat) {
@@ -33,39 +105,6 @@ public class RobotKalmanFilter {
         }
         return e2;
     }
-
-    public double distanceTraveled(double leftFront, double rightFront, double leftRear, double rightRear, double deadWheelLet, double deadWheelRight )
-    {
-        double distance = 0;
-
-        double avgMotors = (leftFront+rightFront+rightRear+leftRear)/4/LINEAR_TO_TICKS;
-        double avgDeadWheel = (deadWheelLet+deadWheelRight)/2/DEAD_WHEEL_TO_TICKS;
-
-        distance = avgMotors*0.4+avgDeadWheel*0.6;
-
-        return distance*DEAD_WHEEL_TO_TICKS;
-    }
-
-    public double kalmanFilter(){
-        double xHat, yHat, xActual,yActual,xPerdition, yPerdition;
-        double xHatVelocity, yHatVelocity, xVelocity, yVelocity;
-
-
-
-
-        double distantTraveled =0;
-
-
-        return distantTraveled;
-    }
-
-
-    public  void prediction(){
-
-
-
-    }
-
 
 
 }
