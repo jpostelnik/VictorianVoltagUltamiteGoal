@@ -533,8 +533,8 @@ public abstract class Auto extends LinearOpMode {
             SimpleMatrix errorDir = error.scale(1 / currentDistToTarget);
 
             System.out.println(
-                    "distance = " + currentDistToTarget+
-                    "\nheading= " + Math.toDegrees(Math.atan2(errorDir.get(1), errorDir.get(0)))
+                    "distance = " + currentDistToTarget +
+                            "\nheading= " + Math.toDegrees(Math.atan2(errorDir.get(1), errorDir.get(0)))
             );
             if (currentDistToTarget < EPSILON) {
                 break;
@@ -544,6 +544,7 @@ public abstract class Auto extends LinearOpMode {
             double currentPower = mp.power(errorDir, 1 - currentDistToTarget / origDistanceToTarget);
             SimpleMatrix Vnext = errorDir.scale(currentPower);
             SimpleMatrix w = robotKinematics.getWheelPower(Vnext.get(0), Vnext.get(1), 0);
+            SimpleMatrix c = correctHeading(runtime);
             drive(w);
 
             double sleepTime = nextUpdateTime - runtime.milliseconds();
@@ -575,8 +576,8 @@ public abstract class Auto extends LinearOpMode {
             System.out.println("dt_actual = " + dt_actual);
             System.out.println("speed = " + speed);
             System.out.println("z_k = " + z_k.transpose());
-            System.out.println("error= "+error.transpose());
-            System.out.println("error norm="+error.normF());
+            System.out.println("error= " + error.transpose());
+            System.out.println("error norm=" + error.normF());
 //            System.out.println("updatedEst = " + updatedEst.transpose());
             telemetry.update();
         }
@@ -615,114 +616,17 @@ public abstract class Auto extends LinearOpMode {
         return updatedEst.extractMatrix(2, 4, 0, 1);
     }
 
-    public void strafe(double distance, double power, boolean left, int heading, ElapsedTime runtime) throws HeartBeatException {
-        pid.reset(this.runtime);
-        resetDeadWheels();
-
-        double theta = Math.PI / 2;
-        SimpleMatrix B = new SimpleMatrix(new double[][]{
-                {dt * dt / 2 * Math.cos(theta), 0, 0, 0},
-                {0, dt * dt / 2 * Math.sin(theta), 0, 0},
-                {0, 0, dt * dt / 2 * Math.cos(theta), 0},
-                {0, 0, 0, dt * dt / 2 * Math.sin(theta)}
-
+    private SimpleMatrix correctHeading(ElapsedTime runtime) {
+        double correction = pid.correction(getCurrentAngle(), runtime);
+        SimpleMatrix correctionMatrix = new SimpleMatrix(new double[][]{
+                {-correction},
+                {correction},
+                {correction},
+                {-correction}
         });
-        robotKalmanFilter.setInitalPostion(new SimpleMatrix(new double[][]{
-                        {0},
-                        {0},
-                        {0},
-                        {0}
-                }),
-                new SimpleMatrix(new double[][]{
-                        {0.1, 0, 0, 0},
-                        {0, 0.1, 0, 0},
-                        {0, 0, 0.1, 0},
-                        {0, 0, 0, 0.1}
-                }),
-                B);
-
-        double currentPosition = shootR.getCurrentPosition();
-        int ticksX = basicMathCalls.getDeadWheelTicks(0);
-        int ticksY = basicMathCalls.getDeadWheelTicks(distance);
-        leftRear.setPower(-1 * power);
-        leftFront.setPower(1 * power);
-        rightRear.setPower(1 * power);
-        rightFront.setPower(-1 * power);
-        SimpleMatrix targetVector = new SimpleMatrix(new double[][]{
-                {0},
-                {distance}
-        });
-        double errorMagnitude = 1000000;
-        int z = (int) (2 * DEAD_WHEEL_TO_TICKS);
-
-        int i = 1;
-        double powerSteps;
-        if (power < -1) {
-            powerSteps = -0.025;
-
-        } else {
-            powerSteps = 0.025;
-
-        }
-        power = Math.abs(power);
-        if (left) {
-            leftRear.setPower(1 * powerSteps);
-            leftFront.setPower(-1 * powerSteps);
-            rightRear.setPower(-1 * powerSteps);
-            rightFront.setPower(1 * powerSteps);
-//            direction = "right";
-        } else {
-            leftRear.setPower(-1 * powerSteps);
-            leftFront.setPower(1 * powerSteps);
-            rightRear.setPower(1 * powerSteps);
-            rightFront.setPower(-1 * powerSteps);
-//            direction = "left";
-        }
-        while (Math.abs(intake.getCurrentPosition() - currentPosition) < ticksY) {
-            double start = this.runtime.milliseconds();
-
-            SimpleMatrix z_k = new SimpleMatrix(new double[][]{
-                    {ticksToInch(encX.getCurrentPosition())},
-                    {ticksToInch(encY.getCurrentPosition())},
-                    {ticksToInch(encX.getVelocity())},
-                    {ticksToInch(encY.getVelocity())}
-            });
-            SimpleMatrix updatedEst = estimateControlInput(basicMathCalls.ticksToInch(encY.getVelocity()), 35);
-            SimpleMatrix currentPositionVector = new SimpleMatrix(new double[][]{
-                    {0},
-                    {0}
-            });
-
-            SimpleMatrix errorVector = targetVector.minus(currentPositionVector);
-            errorMagnitude = Math.sqrt(Math.pow(errorVector.get(0, 0), 2) + Math.pow(errorVector.get(0, 0), 2));
-            double correction = pidPositional.correction(errorMagnitude, this.runtime);
-            if (left) {
-                correction(Range.clip(powerSteps * i, -power, power), heading, "strafe left", false, 1);
-            } else {
-                correction(Range.clip(powerSteps * i, -power, power), heading, "strafe right", false, 1);
-
-            }
-//            leftRear.setPower(-1 * power);
-//            leftFront.setPower(1 * power);
-//            rightRear.setPower(1 * power);
-//            rightFront.setPower(-1 * power);
-            double end = this.runtime.milliseconds();
-            double elapsedTime = end - start;
-            double sleepTime = (50 - elapsedTime);
-//            sleep((long) sleepTime);
-            System.out.println("elapsedTime = " + elapsedTime);
-            System.out.println("z_k = " + z_k.transpose());
-            System.out.println("updatedEst = " + updatedEst.transpose());
-//            telemetry.addData("current", currentPositionVector);
-//            System.out.println("CurrentVector = "+currentPositionVector.transpose());
-//            telemetry.addData("errorVector", errorVector);
-//            System.out.println("Error vector = "+errorVector.transpose());
-
-            telemetry.update();
-            heartbeat();
-        }
-        halt();
+        return correctionMatrix;
     }
+
 
     private double distance(SimpleMatrix x1, SimpleMatrix x2) {
         return x1.minus(x2).normF();
@@ -822,123 +726,6 @@ public abstract class Auto extends LinearOpMode {
         }
         halt();
 
-    }
-
-    public void diagonalStrafe(double xDistance, double yDistance, double power, int heading, ElapsedTime runtime) throws HeartBeatException {
-        pid.reset(this.runtime);
-        resetDeadWheels();
-
-        double theta = basicMathCalls.getAngleDegrees(xDistance, yDistance);
-        SimpleMatrix B = new SimpleMatrix(new double[][]{
-                {dt * dt / 2 * Math.cos(theta), 0, 0, 0},
-                {0, dt * dt / 2 * Math.sin(theta), 0, 0},
-                {0, 0, dt * dt / 2 * Math.cos(theta), 0},
-                {0, 0, 0, dt * dt / 2 * Math.sin(theta)}
-
-        });
-        robotKalmanFilter.setInitalPostion(new SimpleMatrix(new double[][]{
-                        {0},
-                        {0},
-                        {0},
-                        {0}
-                }),
-                new SimpleMatrix(new double[][]{
-                        {0.1, 0, 0, 0},
-                        {0, 0.1, 0, 0},
-                        {0, 0, 0.1, 0},
-                        {0, 0, 0, 0.1}
-                }),
-                B);
-        resetDeadWheels();
-        double currentPosition = shootR.getCurrentPosition();
-        int ticksX = basicMathCalls.getDeadWheelTicks(xDistance);
-        int ticksY = basicMathCalls.getDeadWheelTicks(yDistance);
-
-        double degrees = basicMathCalls.getAngleDegrees(xDistance, yDistance);
-        double secondaryPower = basicMathCalls.getSecondPower(degrees, power);
-
-        if (degrees > 90 || degrees < -90) {
-            power *= -1;
-        }
-        boolean inv = false;
-        if (degrees < 90 && degrees > -90) {
-            telemetry.addLine("right");
-            telemetry.update();
-            leftFront.setPower(secondaryPower);
-            leftRear.setPower(power);
-            rightFront.setPower(power);
-            rightRear.setPower(secondaryPower);
-        } else {
-            inv = true;
-            telemetry.addLine("left");
-            telemetry.update();
-            leftFront.setPower(power);
-            leftRear.setPower(secondaryPower);
-            rightFront.setPower(secondaryPower);
-            rightRear.setPower(power);
-        }
-
-
-        SimpleMatrix targetVector = new SimpleMatrix(new double[][]{
-                {xDistance},
-                {yDistance}
-        });
-        while (Math.abs(intake.getCurrentPosition() - currentPosition) < ticksY) {
-            double start = this.runtime.milliseconds();
-
-            SimpleMatrix z_k = new SimpleMatrix(new double[][]{
-                    {ticksToInch(encX.getCurrentPosition())},
-                    {ticksToInch(encY.getCurrentPosition())},
-                    {ticksToInch(encX.getVelocity())},
-                    {ticksToInch(encY.getVelocity())}
-            });
-            SimpleMatrix updatedEst = estimateControlInput(basicMathCalls.ticksToInch(encY.getVelocity()), 35);
-
-            SimpleMatrix currentPositionVector = new SimpleMatrix(new double[][]{
-                    {0},
-                    {0}
-            });
-
-            SimpleMatrix errorVector = targetVector.minus(currentPositionVector);
-            degrees = basicMathCalls.getAngleDegrees(xDistance, yDistance);
-            secondaryPower = basicMathCalls.getSecondPower(degrees, power);
-
-            if (degrees > 90 || degrees < -90) {
-                power *= -1;
-            }
-            inv = false;
-            if (degrees < 90 && degrees > -90) {
-                telemetry.addLine("right");
-                telemetry.update();
-                leftFront.setPower(secondaryPower);
-                leftRear.setPower(power);
-                rightFront.setPower(power);
-                rightRear.setPower(secondaryPower);
-            } else {
-                inv = true;
-                telemetry.addLine("left");
-                telemetry.update();
-                leftFront.setPower(power);
-                leftRear.setPower(secondaryPower);
-                rightFront.setPower(secondaryPower);
-                rightRear.setPower(power);
-            }
-
-
-            double end = this.runtime.milliseconds();
-            double elapsedTime = end - start;
-            System.out.println("elapsedTime = " + elapsedTime);
-            System.out.println("z_k = " + z_k.transpose());
-            System.out.println("updatedEst = " + updatedEst.transpose());
-//            telemetry.addData("current", currentPositionVector);
-//            System.out.println("CurrentVector = "+currentPositionVector.transpose());
-//            telemetry.addData("errorVector", errorVector);
-//            System.out.println("Error vector = "+errorVector.transpose());
-
-            telemetry.update();
-            heartbeat();
-        }
-        halt();
     }
 
 
