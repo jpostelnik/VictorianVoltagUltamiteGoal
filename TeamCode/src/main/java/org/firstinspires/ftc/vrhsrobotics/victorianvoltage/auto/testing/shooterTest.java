@@ -15,7 +15,7 @@ public class shooterTest extends Auto {
         waitForStart();
         runtime.reset();
 
-        restRuntime();
+        resetRuntime();
         try {
             shoot(1, 1, 4);
         }catch (Exception e){
