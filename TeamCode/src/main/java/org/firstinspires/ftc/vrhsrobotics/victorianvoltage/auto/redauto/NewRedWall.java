@@ -82,10 +82,10 @@ public class NewRedWall extends Auto {
                     telemetry.addLine("a");
                     telemetry.update();
 //                     strafeByDeadWheels(4, 0.2, false, 0, runtime);
-                    move(new SimpleMatrix(new double[][]{{0}, {63}}), 0.7, runtime);
+                    move(new SimpleMatrix(new double[][]{{0}, {76}}), 0.7, runtime);
                     dropWobble();
                     move(new SimpleMatrix(new double[][]{{-39}, {0}}), 0.5, runtime);
-                    move(new SimpleMatrix(new double[][]{{0}, {-43}}), 0.7, runtime);
+                    move(new SimpleMatrix(new double[][]{{0}, {-44}}), 0.7, runtime);
                     lowerWobble();
                     sleep(1000);
                     move(new SimpleMatrix(new double[][]{{3}, {0}}), 0.3, runtime);
