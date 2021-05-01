@@ -545,7 +545,7 @@ public abstract class Auto extends LinearOpMode {
             SimpleMatrix Vnext = errorDir.scale(currentPower);
             SimpleMatrix w = robotKinematics.getWheelPower(Vnext.get(0), Vnext.get(1), 0);
             SimpleMatrix c = correctHeading(runtime);
-            drive(w);
+            drive(w.plus(c));
 
             double sleepTime = nextUpdateTime - runtime.milliseconds();
             if (sleepTime > 0) {
@@ -570,8 +570,8 @@ public abstract class Auto extends LinearOpMode {
             SimpleMatrix v = velocity(z_k);
             double speed = v.normF();
             SimpleMatrix u = estimateControlInput(speed, 50);
-//            updatedEst = robotKalmanFilter.update(z_k, u);
-            updatedEst = z_k;
+            updatedEst = robotKalmanFilter.update(z_k, u);
+//            updatedEst = z_k;
 
             System.out.println("dt_actual = " + dt_actual);
             System.out.println("speed = " + speed);

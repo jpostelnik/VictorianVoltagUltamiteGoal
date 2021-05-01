@@ -14,6 +14,7 @@ public class NewRedWall extends Auto {
 
     public void runOpMode() {
         initialize();
+        resetRuntime();
         telemetry.addLine("all initialized");
         telemetry.update();
         ElapsedTime runtime = new ElapsedTime();
@@ -35,21 +36,23 @@ public class NewRedWall extends Auto {
                     telemetry.addLine("b");
                     telemetry.update();
                     move(new SimpleMatrix(new double[][]{{4}, {0}}), 0.3, runtime);
-                    move(new SimpleMatrix(new double[][]{{0}, {90}}), 0.8, runtime);
-                    move(new SimpleMatrix(new double[][]{{-6}, {0}}), 0.3, runtime);
+                    move(new SimpleMatrix(new double[][]{{0}, {100}}), 1, runtime);
+                    move(new SimpleMatrix(new double[][]{{-30}, {0}}), 0.8, runtime);
+                    sleep(250);
                     dropWobble();
-                    move(new SimpleMatrix(new double[][]{{-20}, {0}}), 0.7, runtime);
-                    move(new SimpleMatrix(new double[][]{{0}, {-65}}), 0.8, runtime);
+                    move(new SimpleMatrix(new double[][]{{-12}, {0}}), 1, runtime);
+                    move(new SimpleMatrix(new double[][]{{0}, {-82}}), 1, runtime);
 //
                     lowerWobble();
                     sleep(1000);
                     move(new SimpleMatrix(new double[][]{{4}, {0}}), 0.3, runtime);
                     raiseWobble();
                     sleep(1000);
-                    move(new SimpleMatrix(new double[][]{{0}, {71}}), 0.8, runtime);
-                    move(new SimpleMatrix(new double[][]{{10}, {0}}), 0.6, runtime);
+                    move(new SimpleMatrix(new double[][]{{-4}, {0}}), 0.6, runtime);
+                    move(new SimpleMatrix(new double[][]{{0}, {80}}), 0.8, runtime);
+                    move(new SimpleMatrix(new double[][]{{5}, {0}}), 0.6, runtime);
                     dropWobble();
-                    move(new SimpleMatrix(new double[][]{{0}, {-15}}), 0.8, runtime);
+                    move(new SimpleMatrix(new double[][]{{0}, {-45}}), 0.8, runtime);
 //                    //  strafeByDeadWheels(5, 0.6, true, 0, runtime);
 //                    // shoot(0.8, 1);
                     break;
@@ -58,11 +61,11 @@ public class NewRedWall extends Auto {
                     telemetry.addLine("c");
                     telemetry.update();
                     move(new SimpleMatrix(new double[][]{{4}, {0}}), 0.3, runtime);
-                    move(new SimpleMatrix(new double[][]{{0}, {110}}), 0.8, runtime);
+                    move(new SimpleMatrix(new double[][]{{0}, {120}}), 1, runtime);
                     move(new SimpleMatrix(new double[][]{{-5}, {0}}), 0.3, runtime);
                     dropWobble();
                     move(new SimpleMatrix(new double[][]{{-42.5}, {0}}), 0.3, runtime);
-                    move(new SimpleMatrix(new double[][]{{0}, {-87}}), 0.8, runtime);
+                    move(new SimpleMatrix(new double[][]{{0}, {-100}}), 0.8, runtime);
                     lowerWobble();
                     sleep(1000);
                     move(new SimpleMatrix(new double[][]{{4}, {0}}), 0.3, runtime);
@@ -82,24 +85,26 @@ public class NewRedWall extends Auto {
                     telemetry.addLine("a");
                     telemetry.update();
 //                     strafeByDeadWheels(4, 0.2, false, 0, runtime);
-                    move(new SimpleMatrix(new double[][]{{0}, {76}}), 0.7, runtime);
+                    move(new SimpleMatrix(new double[][]{{0}, {76}}), 1, runtime);
                     dropWobble();
-                    move(new SimpleMatrix(new double[][]{{-39}, {0}}), 0.5, runtime);
-                    move(new SimpleMatrix(new double[][]{{0}, {-44}}), 0.7, runtime);
+                    move(new SimpleMatrix(new double[][]{{-39}, {0}}), 0.7, runtime);
+                    move(new SimpleMatrix(new double[][]{{0}, {-50}}), 0.7, runtime);
                     lowerWobble();
                     sleep(1000);
-                    move(new SimpleMatrix(new double[][]{{3}, {0}}), 0.3, runtime);
+                    move(new SimpleMatrix(new double[][]{{6}, {0}}), 0.3, runtime);
+//                    wait(250);
                     raiseWobble();
                     sleep(1000);
-                    move(new SimpleMatrix(new double[][]{{0}, {57}}), 0.7, runtime);
-                    move(new SimpleMatrix(new double[][]{{34}, {0}}), 0.5, runtime);
+                    move(new SimpleMatrix(new double[][]{{0}, {64}}), 0.7, runtime);
+                    move(new SimpleMatrix(new double[][]{{34}, {0}}), 0.7, runtime);
                     dropWobble();
-                    move(new SimpleMatrix(new double[][]{{-8}, {0}}), 0.5, runtime);
-                    move(new SimpleMatrix(new double[][]{{0}, {-8}}), 0.5, runtime);
-                    move(new SimpleMatrix(new double[][]{{0}, {20}}), 0.8, runtime);
-                    move(new SimpleMatrix(new double[][]{{-4}, {0}}), 0.5, runtime);
-                    move(new SimpleMatrix(new double[][]{{}, {-3}}), 0.8, runtime);
-                    shoot(.8, 1, 4);
+                    move(new SimpleMatrix(new double[][]{{-8}, {0}}), 0.7, runtime);
+                    move(new SimpleMatrix(new double[][]{{0}, {-20}}), 0.7, runtime);
+                    sleep(1000);
+//                    shoot(.8, 1, 4);
+//                    move(new SimpleMatrix(new double[][]{{0}, {20}}), 0.8, runtime);
+//                    move(new SimpleMatrix(new double[][]{{-4}, {0}}), 0.5, runtime);
+//                    move(new SimpleMatrix(new double[][]{{}, {10}}), 0.8, runtime);
                     break;
                 //todo: will be what is in 0. So might removeByDeadWheels it.
             }
@@ -110,8 +115,9 @@ public class NewRedWall extends Auto {
             turnOffIntake();
             turnOffShooter();
             close();
-            telemetry.addLine(e.getStackTrace().toString());
+            e.printStackTrace();
             telemetry.update();
+            sleep(10000);
 
         }
     }

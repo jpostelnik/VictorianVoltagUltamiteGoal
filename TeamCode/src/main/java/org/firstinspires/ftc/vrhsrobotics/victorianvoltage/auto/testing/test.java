@@ -29,28 +29,28 @@ public class test extends Auto {
         resetRuntime();
 
         try {
-//            strafeByDeadWheels(5, 1, false,0 , runtime);
-//                        move(new SimpleMatrix(new double[][]{{0}, {50}}), 1, runtime);
-//                        sleep(2000);
-//                        move(new SimpleMatrix(new double[][]{{0},{-50}}),1,runtime);
-////            sleep(2000);
+//            strafeByDeadWheels(5, 1, false, 0, runtime);
+            move(new SimpleMatrix(new double[][]{{0}, {50}}), 1, runtime);
+            sleep(2000);
+//            move(new SimpleMatrix(new double[][]{{0}, {-50}}), 1, runtime);
+//            sleep(2000);
 //            move(new SimpleMatrix(new double[][]{{25}, {0}}), 1, runtime);
 //            sleep(2000);
 //
 //            move(new SimpleMatrix(new double[][]{{-25}, {0}}), 1, runtime);
 //            sleep(2000);
-
-            move(new SimpleMatrix(new double[][]{{10}, {20}}), 1, runtime);
-            sleep(2000);
-
-            move(new SimpleMatrix(new double[][]{{-10}, {-20}}), 1, runtime);
-            sleep(2000);
-
-            move(new SimpleMatrix(new double[][]{{10}, {30}}), 1, runtime);
-            sleep(2000);
-
-
-            sleep(10000);
+//
+//            move(new SimpleMatrix(new double[][]{{10}, {20}}), 1, runtime);
+//            sleep(2000);
+//
+//            move(new SimpleMatrix(new double[][]{{-10}, {-20}}), 1, runtime);
+//            sleep(2000);
+//
+//            move(new SimpleMatrix(new double[][]{{10}, {30}}), 1, runtime);
+//            sleep(2000);
+//
+//
+//            sleep(10000);
         } catch (Exception e) {
             halt();
             sleep(10 * 1000);

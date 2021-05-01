@@ -137,6 +137,7 @@ public class Tely extends OpMode {
     public void loop() {
         telemetry.update();
         driveBot();
+        grabWobble();
 //        separate();
         intake();
         shoot();
@@ -246,8 +247,8 @@ public class Tely extends OpMode {
                 intake.setPower(1);
                 feeder.setPower(1);
             } else {
-                feeder.setPower(1);
-                intake.setPower(0);
+                feeder.setPower(0);
+                intake.setPower(1);
             }
         } else if (gamepad2.left_bumper) {
             intake.setPower(-1);
@@ -292,8 +293,8 @@ public class Tely extends OpMode {
     public void
     shoot() {
         if (gamepad2.right_trigger > 0.8) {
-            shootR.setPower(-0.8);
-            shootL.setPower(-0.8);
+            shootR.setPower(-1);
+            shootL.setPower(-1);
         } else {
             shootR.setPower(0);
             shootL.setPower(0);
@@ -311,5 +312,19 @@ public class Tely extends OpMode {
     @Override
     public void stop() {
 
+    }
+
+    public void grabWobble() {
+        if (gamepad1.dpad_right) {
+            hook.setPosition(0);
+            sleep(750);
+            arm.setPosition(1);
+            sleep(750);
+            arm.setPosition(0);
+            sleep(750);
+            hook.setPosition(1);
+
+            hook.setPosition(1);
+        }
     }
 }
